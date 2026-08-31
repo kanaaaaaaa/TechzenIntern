@@ -42,7 +42,10 @@ python manage.py runserver
 
 The first migration seeds four payment methods: Cash, Credit card, E-money and QR code payment. Add more or deactivate them from the Django admin site.
 
-There is no route for `/`, so opening <http://127.0.0.1:8000/> returns 404. That is expected — the backend only serves the API and the admin site.
+Opening <http://127.0.0.1:8000/> returns 404 until the frontend has been built: the backend
+only serves the API and the admin site on its own. Once `frontend/dist/` exists (see
+Deploying), Django serves that build at `/` as well — which is a stale copy while you are
+working, so use the Vite server below for development.
 
 ### 2. Frontend
 
@@ -91,6 +94,39 @@ cd backend
 cd ../frontend
 npm run build
 ```
+
+## Deploying
+
+The whole app ships as one service: the `Dockerfile` builds the Vue app, then Django serves
+it together with the API and the admin site from a single origin. `render.yaml` describes
+that service for [Render](https://render.com), but the image runs anywhere Docker does.
+
+```bash
+docker build -t paymethodfinder .
+docker run -p 8000:8000 -e DJANGO_SECRET_KEY=... -e DJANGO_ALLOWED_HOSTS=localhost paymethodfinder
+```
+
+On Render: push the repository to GitHub, choose *New > Blueprint*, and point it at
+`render.yaml`. `DJANGO_SECRET_KEY` is generated for you.
+
+| Variable | Purpose |
+| --- | --- |
+| `DJANGO_SECRET_KEY` | Required. Any long random string |
+| `DJANGO_DEBUG` | `false` in production |
+| `DJANGO_ALLOWED_HOSTS` | Comma separated hostnames. Render's own hostname is added automatically |
+| `CSRF_TRUSTED_ORIGINS` | Comma separated `https://…` origins, needed to log into the admin site |
+| `DJANGO_SUPERUSER_USERNAME` / `_EMAIL` / `_PASSWORD` | Optional. Recreates the admin account on every deploy |
+| `DATABASE_URL` | Optional. Set it to a `postgres://…` URL to move off SQLite |
+| `CORS_ALLOWED_ORIGINS` | Only needed if the frontend is hosted separately |
+
+Two things to keep in mind.
+
+- **The database is disposable.** SQLite lives inside the container, so every deploy or
+  restart starts from an empty database with the four payment methods seeded again. Set
+  `DATABASE_URL` to a PostgreSQL instance when the data needs to survive.
+- **The API accepts anonymous writes.** Anyone can create, edit and delete stores. Change
+  `DEFAULT_PERMISSION_CLASSES` in `backend/config/settings.py` to
+  `rest_framework.permissions.IsAuthenticatedOrReadOnly` to require a login for writes.
 
 ## Current MVP scope
 

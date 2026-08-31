@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: paymethodfinder
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/payment-methods/
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "false"
+      # RENDER_EXTERNAL_HOSTNAME is added to ALLOWED_HOSTS automatically.
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ""
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      # Set these to get an admin account after each deploy (the database is
+      # disposable). Leave unset to skip creating one.
+      - key: DJANGO_SUPERUSER_USERNAME
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+      # Add DATABASE_URL later to switch from SQLite to PostgreSQL.
