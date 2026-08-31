@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="store-data.js"></script>
 </head>
 <body>
 
@@ -45,6 +46,10 @@
   `).join('');
 
   function submitStore(){
+    const methods = { cash:false, qr:false, credit:false, emoney:false };
+    chosen.forEach(k => { methods[k] = true; });
+    StoreDB.add({ name, methods });
+
     const toast = document.getElementById('toast');
     toast.textContent = 'Submitted · ' + name;
     toast.classList.add('show');

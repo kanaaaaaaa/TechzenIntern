@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="store-data.js"></script>
 </head>
 <body>
 
@@ -35,16 +36,10 @@
 </div>
 
 <script>
-  const stores = [
-    { id:1, name:'Store 1', updated:'8/31', methods:{ emoney:false, qr:true, credit:true, cash:true } },
-    { id:3, name:'Store 3', updated:'8/31', methods:{ emoney:false, qr:false, credit:false, cash:true } },
-    { id:4, name:'Store 4', updated:'7/29', methods:{ emoney:false, qr:true, credit:false, cash:true } },
-  ];
-
   function renderList(){
     const q = (document.getElementById('list-search').value || '').toLowerCase().trim();
     const rows = document.getElementById('store-rows');
-    const filtered = stores.filter(s => s.name.toLowerCase().includes(q));
+    const filtered = StoreDB.getAll().filter(s => s.name.toLowerCase().includes(q));
     rows.innerHTML = filtered.map(s => `
       <div class="store-row">
         <div class="s-name">${s.name}</div>
