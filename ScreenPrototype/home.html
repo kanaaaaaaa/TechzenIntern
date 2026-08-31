@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="store-data.js"></script>
 </head>
 <body>
 
@@ -33,10 +34,20 @@
           <span class="arrow">＋</span>
         </a>
       </div>
-      <div class="home-footer">3 stores on record · last synced 8/31</div>
+      <div class="home-footer" id="home-footer"></div>
     </section>
   </div>
 </div>
 
+<script>
+  const stores = StoreDB.getAll();
+  const lastSynced = stores.reduce((latest, s) => {
+    const [m, d] = s.updated.split('/').map(Number);
+    const [lm, ld] = latest.split('/').map(Number);
+    return (m > lm || (m === lm && d > ld)) ? s.updated : latest;
+  }, stores[0] ? stores[0].updated : '—');
+  document.getElementById('home-footer').textContent =
+    stores.length + ' store' + (stores.length === 1 ? '' : 's') + ' on record · last synced ' + lastSynced;
+</script>
 </body>
 </html>
