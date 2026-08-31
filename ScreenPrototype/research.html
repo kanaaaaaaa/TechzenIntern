@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Store Ledger — Research</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="rig">
+  <div class="phone">
+    <section class="screen active">
+      <span class="eyebrow-stamp">step 1</span>
+      <h1 class="page-title">Research</h1>
+      <p class="page-sub">Look up a store to check or update its accepted payment methods.</p>
+
+      <form action="list.html" method="get" style="display:flex; flex-direction:column; flex:1;">
+        <div class="search-field">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input name="q" placeholder="Search stores…" value="store">
+        </div>
+
+        <div class="chip-row">
+          <a class="chip" href="list.html?q=store%201">store 1</a>
+          <a class="chip" href="list.html?q=store%203">store 3</a>
+          <a class="chip" href="list.html?q=store%204">store 4</a>
+        </div>
+
+        <button class="go-btn" type="submit">Search</button>
+      </form>
+    </section>
+  </div>
+</div>
+
+</body>
+</html>

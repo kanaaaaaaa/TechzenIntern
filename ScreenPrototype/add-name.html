@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Store Ledger — Add store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="rig">
+  <div class="phone">
+    <section class="screen active">
+      <span class="eyebrow-stamp">new entry · step 1</span>
+      <h1 class="page-title">Add store</h1>
+      <p class="page-sub">What's the store called?</p>
+
+      <form id="name-form" style="display:flex; flex-direction:column;">
+        <div class="search-field name-field">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          <input id="store-name" name="name" placeholder="Store name…" autofocus>
+        </div>
+        <button class="confirm-name-btn" type="submit">Next</button>
+      </form>
+    </section>
+  </div>
+</div>
+
+<script>
+  document.getElementById('name-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    const name = document.getElementById('store-name').value.trim() || 'New store';
+    location.href = 'add-methods.html?name=' + encodeURIComponent(name);
+  });
+</script>
+</body>
+</html>

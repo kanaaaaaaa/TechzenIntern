@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Store Ledger — Confirm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="rig">
+  <div class="phone">
+    <section class="screen active">
+      <span class="eyebrow-stamp">new entry · step 3</span>
+      <h1 class="page-title" id="store-title">Store</h1>
+      <p class="page-sub">Double-check the payment methods before you submit.</p>
+
+      <div class="confirm-table" id="confirm-table"></div>
+
+      <p class="submit-label">Submit information</p>
+
+      <div class="btn-row">
+        <button class="return-btn" onclick="history.back()">Return</button>
+        <button class="ok-btn" style="flex:1;" onclick="submitStore()">Yes</button>
+      </div>
+      <div class="toast" id="toast">Submitted</div>
+    </section>
+  </div>
+</div>
+
+<script>
+  const METHOD_LABELS = { cash:'Cash', qr:'QR', credit:'Credit', emoney:'e-money' };
+  const params = new URLSearchParams(location.search);
+  const name = params.get('name') || 'New store';
+  const chosen = new Set((params.get('methods') || '').split(',').filter(Boolean));
+
+  document.getElementById('store-title').textContent = name;
+  document.getElementById('confirm-table').innerHTML = Object.keys(METHOD_LABELS).map(k => `
+    <div class="confirm-cell">
+      <span class="c-label">${METHOD_LABELS[k]}</span>
+      <span class="c-mark ${chosen.has(k) ? 'yes' : 'no'}">${chosen.has(k) ? '○' : '×'}</span>
+    </div>
+  `).join('');
+
+  function submitStore(){
+    const toast = document.getElementById('toast');
+    toast.textContent = 'Submitted · ' + name;
+    toast.classList.add('show');
+    setTimeout(() => { location.href = 'list.html'; }, 900);
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Store Ledger — Add store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="rig">
+  <div class="phone">
+    <section class="screen active">
+      <span class="eyebrow-stamp">new entry · step 2</span>
+      <h1 class="page-title" id="store-title">Store</h1>
+      <p class="page-sub">Which payment methods does it accept?</p>
+
+      <div id="pick-rows"></div>
+
+      <div class="detail-footer">
+        <a class="ok-btn" id="ok-link" href="#" style="text-align:center; text-decoration:none;">OK</a>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  const METHOD_LABELS = { cash:'Cash', qr:'QR', credit:'Credit', emoney:'e-money' };
+  const params = new URLSearchParams(location.search);
+  const name = params.get('name') || 'New store';
+  document.getElementById('store-title').textContent = name;
+
+  const selected = new Set();
+
+  function render(){
+    document.getElementById('pick-rows').innerHTML = Object.keys(METHOD_LABELS).map(k => `
+      <div class="pick-row">
+        <span class="m-name">${METHOD_LABELS[k]}</span>
+        <button type="button" class="add-pill ${selected.has(k) ? 'added' : ''}" onclick="toggle('${k}')">
+          ${selected.has(k) ? 'Added' : 'Add'}
+        </button>
+      </div>
+    `).join('');
+    document.getElementById('ok-link').href =
+      'add-confirm.html?name=' + encodeURIComponent(name) + '&methods=' + encodeURIComponent([...selected].join(','));
+  }
+
+  function toggle(k){
+    selected.has(k) ? selected.delete(k) : selected.add(k);
+    render();
+  }
+
+  render();
+</script>
+</body>
+</html>
