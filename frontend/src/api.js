@@ -1,0 +1,32 @@
+import axios from "axios"
+
+
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api",
+  timeout: 10000,
+})
+
+export const listStores = (params = {}) =>
+  api.get("/stores/", { params }).then((response) => response.data)
+
+export const getStore = (id) =>
+  api.get(`/stores/${id}/`).then((response) => response.data)
+
+export const createStore = (payload) =>
+  api.post("/stores/", payload).then((response) => response.data)
+
+export const updateStore = (id, payload) =>
+  api.patch(`/stores/${id}/`, payload).then((response) => response.data)
+
+export const listPaymentMethods = () =>
+  api.get("/payment-methods/").then((response) => response.data)
+
+export function apiErrorMessage(error) {
+  if (!error.response) return "Cannot reach the API. Check that the Django server is running."
+  const data = error.response.data
+  if (typeof data === "string") return data
+  if (data?.detail) return data.detail
+  const first = Object.values(data || {}).flat()[0]
+  return first || "The request failed."
+}
+
