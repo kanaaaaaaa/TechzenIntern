@@ -1,13 +1,22 @@
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from .access import issue_token
 from .models import PaymentMethod, Store, StorePaymentMethod
 
 
-class StoreApiTests(APITestCase):
+class UnlockedApiTestCase(APITestCase):
+    """Every API call needs the app password, so hand the tests a token."""
+
+    def setUp(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {issue_token()}")
+
+
+class StoreApiTests(UnlockedApiTestCase):
     def test_create_store_initializes_all_payment_methods(self):
         # Full-width characters check that normalized_name is NFKC folded.
         response = self.client.post(reverse("store-list"), {"name": "Ｔｅｓｔ Ｓｔｏｒｅ", "address": "Tokyo"})
@@ -67,7 +76,7 @@ class StoreApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
-class StoreDuplicateTests(APITestCase):
+class StoreDuplicateTests(UnlockedApiTestCase):
     def test_rejects_same_name_and_address(self):
         Store.objects.create(name="Corner Shop", address="1 Main Street")
 
@@ -171,3 +180,28 @@ class StoreAdminTests(TestCase):
         self.assertEqual(store.payment_methods.count(), len(methods))
         self.assertEqual(store.payment_methods.filter(status="accepted").count(), len(methods[::2]))
 
+
+
+class AppAccessTests(APITestCase):
+    def test_requests_without_a_token_are_refused(self):
+        response = self.client.get(reverse("store-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_wrong_password_is_refused(self):
+        response = self.client.post(reverse("app-access"), {"password": "not-the-password"})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotIn("token", response.data)
+
+    def test_password_returns_a_working_token(self):
+        response = self.client.post(reverse("app-access"), {"password": settings.APP_PASSWORD})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.data['token']}")
+        self.assertEqual(self.client.get(reverse("store-list")).status_code, status.HTTP_200_OK)
+
+    def test_a_made_up_token_is_refused(self):
+        self.client.credentials(HTTP_AUTHORIZATION="Bearer made.up.token")
+
+        self.assertEqual(self.client.get(reverse("store-list")).status_code, status.HTTP_403_FORBIDDEN)

@@ -1,8 +1,24 @@
 from django.db.models import Prefetch
 from rest_framework import filters, viewsets
+from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from .access import issue_token, password_matches
 from .models import PaymentMethod, Store, StorePaymentMethod
 from .serializers import PaymentMethodSerializer, StoreSerializer
+
+
+class AppAccessView(APIView):
+    """Exchanges the shared app password for the token the app sends back."""
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        if not password_matches(request.data.get("password")):
+            raise ValidationError({"password": ["That password is not correct."]})
+        return Response({"token": issue_token()})
 
 
 class StoreViewSet(viewsets.ModelViewSet):
@@ -23,4 +39,3 @@ class PaymentMethodViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return PaymentMethod.objects.filter(is_active=True)
-

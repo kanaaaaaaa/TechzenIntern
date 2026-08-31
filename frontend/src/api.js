@@ -1,11 +1,34 @@
 import axios from "axios"
 
+import { clearToken, getToken } from "./auth"
+
 
 export const api = axios.create({
   // In a build, Django serves the app from the same origin, so /api is enough.
   baseURL: import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "/api"),
   timeout: 10000,
 })
+
+api.interceptors.request.use((config) => {
+  const token = getToken()
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // An expired or invalid token means the password has to be entered again.
+    if (error.response?.status === 403) {
+      clearToken()
+      if (window.location.pathname !== "/login") window.location.assign("/login")
+    }
+    return Promise.reject(error)
+  },
+)
+
+export const unlock = (password) =>
+  api.post("/access/", { password }).then((response) => response.data.token)
 
 export const listStores = (params = {}) =>
   api.get("/stores/", { params }).then((response) => response.data)
@@ -30,4 +53,3 @@ export function apiErrorMessage(error) {
   const first = Object.values(data || {}).flat()[0]
   return first || "The request failed."
 }
-

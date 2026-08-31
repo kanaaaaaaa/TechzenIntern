@@ -23,4 +23,7 @@ services:
         sync: false
       - key: DJANGO_SUPERUSER_PASSWORD
         sync: false
+      # The shared password for the app itself. Change it here to rotate it.
+      - key: APP_PASSWORD
+        sync: false
       # Add DATABASE_URL later to switch from SQLite to PostgreSQL.
