@@ -44,6 +44,16 @@ class StoreSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 
+    def validate(self, attrs):
+        candidate = Store(
+            pk=self.instance.pk if self.instance else None,
+            name=attrs.get("name", getattr(self.instance, "name", "")),
+            address=attrs.get("address", getattr(self.instance, "address", "")),
+        )
+        if candidate.duplicates().exists():
+            raise serializers.ValidationError("A store with this name and address already exists.")
+        return attrs
+
     def validate_payment_statuses(self, values):
         method_ids = [value["payment_method_id"] for value in values]
         if len(method_ids) != len(set(method_ids)):

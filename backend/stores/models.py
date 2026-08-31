@@ -1,20 +1,48 @@
 import unicodedata
 
+from django.core.exceptions import ValidationError
 from django.db import models
+
+
+def normalize(value):
+    return unicodedata.normalize("NFKC", value or "").casefold().strip()
 
 
 class Store(models.Model):
     name = models.CharField(max_length=160)
     normalized_name = models.CharField(max_length=160, db_index=True, editable=False)
     address = models.CharField(max_length=255, blank=True)
+    normalized_address = models.CharField(max_length=255, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["name", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["normalized_name", "normalized_address"],
+                name="unique_store_name_address",
+            ),
+        ]
+
+    def duplicates(self):
+        """Stores that already use this name and address."""
+        found = Store.objects.filter(
+            normalized_name=normalize(self.name),
+            normalized_address=normalize(self.address),
+        )
+        return found.exclude(pk=self.pk) if self.pk else found
+
+    def clean(self):
+        super().clean()
+        # The constraint covers non-editable fields, which forms skip, so the
+        # duplicate has to be reported from here to reach the admin site.
+        if self.duplicates().exists():
+            raise ValidationError("A store with this name and address already exists.")
 
     def save(self, *args, **kwargs):
-        self.normalized_name = unicodedata.normalize("NFKC", self.name).casefold().strip()
+        self.normalized_name = normalize(self.name)
+        self.normalized_address = normalize(self.address)
         super().save(*args, **kwargs)
 
     def __str__(self):

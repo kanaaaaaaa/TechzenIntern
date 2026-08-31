@@ -67,6 +67,46 @@ class StoreApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
+class StoreDuplicateTests(APITestCase):
+    def test_rejects_same_name_and_address(self):
+        Store.objects.create(name="Corner Shop", address="1 Main Street")
+
+        response = self.client.post(
+            reverse("store-list"), {"name": "Corner Shop", "address": "1 Main Street"}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Store.objects.filter(name="Corner Shop").count(), 1)
+
+    def test_rejects_same_name_and_address_in_different_case(self):
+        Store.objects.create(name="Corner Shop", address="1 Main Street")
+
+        response = self.client.post(
+            reverse("store-list"), {"name": "CORNER shop", "address": " 1 Main Street "}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_allows_same_name_at_a_different_address(self):
+        Store.objects.create(name="Corner Shop", address="1 Main Street")
+
+        response = self.client.post(
+            reverse("store-list"), {"name": "Corner Shop", "address": "2 Market Road"}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Store.objects.filter(name="Corner Shop").count(), 2)
+
+    def test_allows_updating_a_store_without_moving_it(self):
+        store = Store.objects.create(name="Corner Shop", address="1 Main Street")
+
+        response = self.client.patch(
+            reverse("store-detail", args=[store.id]), {"address": "1 Main Street"}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
 class StoreAdminTests(TestCase):
     def setUp(self):
         User.objects.create_superuser("admin", "admin@example.com", "pass1234")
@@ -82,6 +122,28 @@ class StoreAdminTests(TestCase):
         formset = response.context["inline_admin_formsets"][0].formset
         self.assertEqual(formset.total_form_count(), len(methods))
         self.assertEqual(len(formset.extra_forms), len(methods) - 1)
+
+    def test_admin_rejects_a_duplicate_store(self):
+        Store.objects.create(name="Corner Shop", address="1 Main Street")
+        methods = list(PaymentMethod.objects.filter(is_active=True))
+        prefix = "payment_methods"
+        payload = {
+            "name": "Corner Shop",
+            "address": "1 Main Street",
+            f"{prefix}-TOTAL_FORMS": len(methods),
+            f"{prefix}-INITIAL_FORMS": 0,
+            f"{prefix}-MIN_NUM_FORMS": 0,
+            f"{prefix}-MAX_NUM_FORMS": 1000,
+        }
+        for index, method in enumerate(methods):
+            payload[f"{prefix}-{index}-payment_method"] = method.id
+            payload[f"{prefix}-{index}-status"] = "unknown"
+
+        response = self.client.post(reverse("admin:stores_store_add"), payload)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertContains(response, "already exists")
+        self.assertEqual(Store.objects.filter(name="Corner Shop").count(), 1)
 
     def test_admin_store_form_saves_every_payment_method(self):
         methods = list(PaymentMethod.objects.filter(is_active=True))
