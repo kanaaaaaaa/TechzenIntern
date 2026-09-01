@@ -1,7 +1,9 @@
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 
 def env_list(name, default):
@@ -11,8 +13,32 @@ def env_list(name, default):
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIST = BASE_DIR.parent / "frontend" / "dist"
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "development-only-secret-key")
-DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
+# Production is the default. A forgotten DJANGO_DEBUG must not open the app up,
+# so development is the setting you have to ask for.
+DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
+
+# `manage.py test` runs with DEBUG off but still needs the secrets below. Only
+# the literal test command matches; gunicorn's argv never does.
+RUNNING_TESTS = sys.argv[1:2] == ["test"]
+
+
+def env_secret(name, development_value):
+    """A secret production must supply. Development gets a throwaway stand-in."""
+    value = os.environ.get(name)
+    if value:
+        return value
+    if DEBUG or RUNNING_TESTS:
+        return development_value
+    raise ImproperlyConfigured(
+        f"{name} is not set. Set it in the environment before starting the server "
+        f"(on Render: the service's Environment tab), or export DJANGO_DEBUG=true "
+        f"to run locally with an insecure development value."
+    )
+
+
+# Never give these a usable default: a secret with a fallback baked into the
+# repository is a secret everyone who can read the repository already has.
+SECRET_KEY = env_secret("DJANGO_SECRET_KEY", "insecure-development-secret-key")
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
 
 # Render exposes the public hostname this way; other hosts use DJANGO_ALLOWED_HOSTS.
@@ -91,14 +117,19 @@ CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "")
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "true").lower() == "true"
+    # The test client speaks plain HTTP, so redirecting it would turn every
+    # assertion into a 301. The rest of the hardening below still applies.
+    SECURE_SSL_REDIRECT = (
+        not RUNNING_TESTS
+        and os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "true").lower() == "true"
+    )
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 3600
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
-APP_PASSWORD = os.environ.get("APP_PASSWORD", "techzen2026")
+APP_PASSWORD = env_secret("APP_PASSWORD", "development-only-password")
 APP_ACCESS_MAX_AGE = int(os.environ.get("APP_ACCESS_MAX_AGE", 60 * 60 * 24 * 30))
 
 REST_FRAMEWORK = {
@@ -106,6 +137,18 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["stores.access.HasAppAccess"],
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    # One password guards the whole app, so it is one target worth guessing at.
+    # Only /api/access/ carries this scope; the rest of the API is unthrottled.
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": {
+        "app-access": os.environ.get("APP_ACCESS_THROTTLE_RATE", "10/hour"),
+    },
+    # Throttling counts per client IP. Render terminates TLS on one proxy in
+    # front of this service, so the last X-Forwarded-For entry is the real
+    # client. Left unset, DRF keys off the whole header, which a client can
+    # forge to hand itself a fresh bucket on every request. Set 0 when nothing
+    # proxies this service.
+    "NUM_PROXIES": int(os.environ.get("DJANGO_NUM_PROXIES", "1")),
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }
 

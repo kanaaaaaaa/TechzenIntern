@@ -14,6 +14,9 @@ class AppAccessView(APIView):
     """Exchanges the shared app password for the token the app sends back."""
 
     permission_classes = [AllowAny]
+    # The only endpoint that can be guessed at, and there is a single password
+    # for everyone to guess, so cap the attempts. Rate: DEFAULT_THROTTLE_RATES.
+    throttle_scope = "app-access"
 
     def post(self, request):
         if not password_matches(request.data.get("password")):

@@ -23,7 +23,17 @@ services:
         sync: false
       - key: DJANGO_SUPERUSER_PASSWORD
         sync: false
-      # The shared password for the app itself. Change it here to rotate it.
+      # REQUIRED. The shared password for the app itself; set it in the
+      # service's Environment tab before the first deploy. There is no default
+      # -- the service will not start until this is set. Change it here to
+      # rotate it (note: tokens already handed out stay valid, see README).
       - key: APP_PASSWORD
         sync: false
+      # Guesses allowed per client IP against that one password.
+      - key: APP_ACCESS_THROTTLE_RATE
+        value: 10/hour
+      # Render puts exactly one proxy in front of this service, so the last
+      # X-Forwarded-For entry is the real client. Throttling keys off it.
+      - key: DJANGO_NUM_PROXIES
+        value: "1"
       # Add DATABASE_URL later to switch from SQLite to PostgreSQL.

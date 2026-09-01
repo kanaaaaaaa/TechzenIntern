@@ -18,7 +18,11 @@ COPY backend/ backend/
 COPY --from=frontend /app/frontend/dist/ frontend/dist/
 
 # Static files for the admin site; the frontend build is served by WhiteNoise.
-RUN DJANGO_SECRET_KEY=build-only python backend/manage.py collectstatic --noinput
+# Settings now refuse to load without these, and collectstatic has to load them.
+# Both are throwaway build-time values; the running container gets the real ones
+# from the environment.
+RUN DJANGO_SECRET_KEY=build-only APP_PASSWORD=build-only \
+    python backend/manage.py collectstatic --noinput
 
 COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh

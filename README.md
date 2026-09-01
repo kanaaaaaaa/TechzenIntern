@@ -32,10 +32,17 @@ python3 -m venv .venv  # first time only; .venv is not in the repository
 source .venv/bin/activate
 pip install -r backend/requirements.txt
 cd backend
+export DJANGO_DEBUG=true  # see below; without it the server refuses to start
 python manage.py migrate
 python manage.py createsuperuser  # only if you want the admin site
 python manage.py runserver
 ```
+
+`DJANGO_SECRET_KEY` and `APP_PASSWORD` have no defaults — a secret with a fallback in
+the repository is a secret everyone who can read the repository already has. Production
+must supply both, and the server exits with a message naming the missing one. Setting
+`DJANGO_DEBUG=true` opts into insecure development stand-ins so local work needs no
+setup; `backend/.env.example` lists the variables if you would rather set them properly.
 
 - API: <http://127.0.0.1:8000/api/>
 - Admin site: <http://127.0.0.1:8000/admin/>
@@ -141,7 +148,7 @@ API を直接確認するときは、アプリのパスワードでトークン�
 
 ```bash
 TOKEN=$(curl -s -X POST http://127.0.0.1:8000/api/access/ \
-  -H 'Content-Type: application/json' -d '{"password":"techzen2026"}' \
+  -H 'Content-Type: application/json' -d "{\"password\":\"$APP_PASSWORD\"}" \
   | grep -o '"token":"[^"]*' | cut -d'"' -f4)
 curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/api/stores/
 ```
@@ -164,7 +171,13 @@ docker build -t paymethodfinder .
   ときは画面右上の Lock ボタンを押すか、プライベートウィンドウで開いてください。全員のトークンを
   無効にしたい場合は `DJANGO_SECRET_KEY` を変更します。
 - **管理画面の CSS が消えた**: `DEBUG=false` で `collectstatic` をせずに起動した場合です。開発時は
-  `DJANGO_DEBUG` を設定せずに（`true` のまま）起動してください。
+  `DJANGO_DEBUG=true` を設定して起動してください。
+- **`ImproperlyConfigured` で起動しない**: `DJANGO_SECRET_KEY` か `APP_PASSWORD` が未設定です。
+  既定値は意図的に用意していません（リポジトリに書いた秘密は秘密ではないため）。開発中は
+  `export DJANGO_DEBUG=true` で開発用の値が使われます。本番では両方を必ず設定してください。
+- **パスワードを何度か間違えたら 429 が返る**: 仕様です。共有パスワードは 1 つしかなく総当たりの
+  標的になるため、`/api/access/` は IP あたり既定で 1 時間 10 回までに制限しています。回数は
+  `APP_ACCESS_THROTTLE_RATE` で変更できます。
 
 ## Deploying
 
@@ -182,12 +195,14 @@ On Render: push the repository to GitHub, choose *New > Blueprint*, and point it
 
 | Variable | Purpose |
 | --- | --- |
-| `DJANGO_SECRET_KEY` | Required. Any long random string |
-| `DJANGO_DEBUG` | `false` in production |
+| `DJANGO_SECRET_KEY` | **Required.** Any long random string. No default; the server will not start without it |
+| `APP_PASSWORD` | **Required.** The password visitors type to open the app. No default |
+| `DJANGO_DEBUG` | Defaults to `false`. Set `true` only for local development |
 | `DJANGO_ALLOWED_HOSTS` | Comma separated hostnames. Render's own hostname is added automatically |
 | `CSRF_TRUSTED_ORIGINS` | Comma separated `https://…` origins, needed to log into the admin site |
 | `DJANGO_SUPERUSER_USERNAME` / `_EMAIL` / `_PASSWORD` | Optional. Recreates the admin account on every deploy |
-| `APP_PASSWORD` | The password visitors type to open the app. Defaults to `techzen2026` |
+| `APP_ACCESS_THROTTLE_RATE` | Guesses allowed per client IP against the app password. Defaults to `10/hour` |
+| `DJANGO_NUM_PROXIES` | Proxies in front of the service, used to identify the client for throttling. `1` on Render, `0` with nothing in front |
 | `DATABASE_URL` | Optional. Set it to a `postgres://…` URL to move off SQLite |
 | `CORS_ALLOWED_ORIGINS` | Only needed if the frontend is hosted separately |
 
@@ -196,9 +211,13 @@ Two things to keep in mind.
 - **The database is disposable.** SQLite lives inside the container, so every deploy or
   restart starts from an empty database with the four payment methods seeded again. Set
   `DATABASE_URL` to a PostgreSQL instance when the data needs to survive.
-- **The app is behind a shared password.** Visitors enter it once (`techzen2026` by default,
-  overridden with `APP_PASSWORD`) and the browser keeps the token it gets back. Everyone who
-  knows the password can create, edit and delete stores; there are no individual accounts yet.
+- **The app is behind a shared password.** Set `APP_PASSWORD` in the Render dashboard before
+  the first deploy; there is no default, so the service will not start until you do. Visitors
+  enter it once and the browser keeps the token it gets back. Everyone who knows the password
+  can create, edit and delete stores; there are no individual accounts yet. Guesses are capped
+  at `APP_ACCESS_THROTTLE_RATE` per client IP, counted in memory per worker — with the default
+  two workers, an attacker gets roughly twice the stated rate. Give the app a real random
+  password rather than relying on the cap alone.
 
 ## Current MVP scope
 
