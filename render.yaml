@@ -4,7 +4,7 @@ services:
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /api/payment-methods/
+    healthCheckPath: /
     envVars:
       - key: DJANGO_SECRET_KEY
         generateValue: true
