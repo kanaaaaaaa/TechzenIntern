@@ -11,9 +11,15 @@ const statuses = reactive({})
 const form = reactive({ name: "", address: "" })
 const loading = ref(true)
 const saving = ref(false)
+const confirming = ref(false)
 const error = ref("")
 
-const canSubmit = computed(() => form.name.trim() && !loading.value && !saving.value)
+const canReview = computed(() => form.name.trim() && !loading.value)
+const statusLabels = {
+  accepted: "Accepted",
+  not_accepted: "Not accepted",
+  unknown: "Unknown",
+}
 
 function updateStatus(id, status) {
   statuses[id] = status
@@ -30,11 +36,24 @@ async function load() {
   }
 }
 
-async function submit() {
+function review() {
+  if (!canReview.value) return
+  error.value = ""
+  confirming.value = true
+  window.scrollTo({ top: 0, behavior: "smooth" })
+}
+
+function cancelReview() {
+  error.value = ""
+  confirming.value = false
+  window.scrollTo({ top: 0, behavior: "smooth" })
+}
+
+async function save() {
   saving.value = true
   error.value = ""
   try {
-    const created = await createStore({
+    await createStore({
       name: form.name.trim(),
       address: form.address.trim(),
       payment_statuses: methods.value.map((method) => ({
@@ -42,7 +61,7 @@ async function submit() {
         status: statuses[method.id],
       })),
     })
-    await router.push({ name: "store-detail", params: { id: created.id }, query: { created: "1" } })
+    await router.push({ name: "stores" })
   } catch (err) {
     error.value = apiErrorMessage(err)
   } finally {
@@ -54,13 +73,19 @@ onMounted(load)
 </script>
 
 <template>
-  <section class="page-heading">
+  <section v-if="!confirming" class="page-heading">
     <p class="eyebrow">NEW STORE</p>
     <h1>Add a store</h1>
     <p>Enter the basic store details and the payment methods you can confirm right now.</p>
   </section>
 
-  <form class="editor-form" @submit.prevent="submit">
+  <section v-else class="page-heading confirmation-heading">
+    <p class="eyebrow">CONFIRM NEW STORE</p>
+    <h1>Please confirm the details.</h1>
+    <p>Check the information below. To make a change, select Cancel and return to the previous step.</p>
+  </section>
+
+  <form v-if="!confirming" class="editor-form" @submit.prevent="review">
     <section class="form-section">
       <div class="section-number">01</div>
       <div class="section-content">
@@ -85,8 +110,49 @@ onMounted(load)
     <p v-if="error" class="alert error">{{ error }}</p>
     <div class="form-actions">
       <RouterLink class="button secondary" to="/stores">Cancel</RouterLink>
-      <button class="button primary" type="submit" :disabled="!canSubmit">{{ saving ? "Saving…" : "Add this store" }}</button>
+      <button class="button primary" type="submit" :disabled="!canReview">Review this store</button>
+    </div>
+  </form>
+
+  <form v-else class="editor-form confirmation-form" @submit.prevent="save">
+    <section class="form-section">
+      <div class="section-number">01</div>
+      <div class="section-content">
+        <h2>Store details</h2>
+        <dl class="review-details">
+          <div>
+            <dt>Store name</dt>
+            <dd>{{ form.name.trim() }}</dd>
+          </div>
+          <div>
+            <dt>Address</dt>
+            <dd>{{ form.address.trim() || "No address" }}</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="section-number">02</div>
+      <div class="section-content">
+        <h2>Payment methods</h2>
+        <p class="section-note">These values will be saved with the new store.</p>
+        <div class="method-list review-method-list">
+          <div v-for="method in methods" :key="method.id" class="method-edit-row">
+            <div>
+              <strong>{{ method.name }}</strong>
+              <small>{{ method.code }}</small>
+            </div>
+            <span :class="['review-status', statuses[method.id]]">{{ statusLabels[statuses[method.id]] }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p v-if="error" class="alert error">{{ error }}</p>
+    <div class="form-actions confirmation-actions">
+      <button class="button secondary" type="button" :disabled="saving" @click="cancelReview">Cancel</button>
+      <button class="button primary" type="submit" :disabled="saving">{{ saving ? "Saving…" : "Save Changes" }}</button>
     </div>
   </form>
 </template>
-
