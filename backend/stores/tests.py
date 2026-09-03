@@ -83,6 +83,20 @@ class StoreApiTests(UnlockedApiTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_delete_store_removes_it_and_its_payment_statuses(self):
+        store = Store.objects.create(name="Store to delete")
+        relation = StorePaymentMethod.objects.create(
+            store=store,
+            payment_method=PaymentMethod.objects.first(),
+            status=StorePaymentMethod.Status.ACCEPTED,
+        )
+
+        response = self.client.delete(reverse("store-detail", args=[store.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Store.objects.filter(id=store.id).exists())
+        self.assertFalse(StorePaymentMethod.objects.filter(id=relation.id).exists())
+
 
 class StoreDuplicateTests(UnlockedApiTestCase):
     def test_rejects_same_name_and_address(self):

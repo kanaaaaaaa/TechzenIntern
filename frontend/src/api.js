@@ -42,6 +42,9 @@ export const createStore = (payload) =>
 export const updateStore = (id, payload) =>
   api.patch(`/stores/${id}/`, payload).then((response) => response.data)
 
+export const deleteStore = (id) =>
+  api.delete(`/stores/${id}/`)
+
 export const listPaymentMethods = () =>
   api.get("/payment-methods/").then((response) => response.data)
 

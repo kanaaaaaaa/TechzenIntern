@@ -2,13 +2,14 @@
 import { computed, onMounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
-import { apiErrorMessage, listStores } from "../api"
+import { apiErrorMessage, deleteStore, listStores } from "../api"
 
 const route = useRoute()
 const router = useRouter()
 const query = ref(String(route.query.q || ""))
 const stores = ref([])
 const loading = ref(true)
+const deletingId = ref(null)
 const error = ref("")
 
 const resultLabel = computed(() =>
@@ -32,6 +33,22 @@ async function search() {
   }
 }
 
+async function removeStore(store) {
+  const confirmed = window.confirm(`Delete "${store.name}"?\n\nThis action cannot be undone.`)
+  if (!confirmed) return
+
+  deletingId.value = store.id
+  error.value = ""
+  try {
+    await deleteStore(store.id)
+    stores.value = stores.value.filter((item) => item.id !== store.id)
+  } catch (err) {
+    error.value = apiErrorMessage(err)
+  } finally {
+    deletingId.value = null
+  }
+}
+
 onMounted(search)
 </script>
 
@@ -51,25 +68,39 @@ onMounted(search)
 
   <div class="result-head"><span>Results</span><strong>{{ resultLabel }}</strong></div>
   <p v-if="error" class="alert error">{{ error }}</p>
-  <div v-else-if="loading" class="empty-state">Loading stores…</div>
+  <div v-if="loading" class="empty-state">Loading stores…</div>
   <div v-else-if="stores.length" class="store-grid">
-    <RouterLink
+    <article
       v-for="store in stores"
       :key="store.id"
       class="store-card"
-      :to="{ name: 'store-detail', params: { id: store.id }, query: query.trim() ? { q: query.trim() } : {} }"
     >
-      <div class="store-card-top">
-        <div><h2>{{ store.name }}</h2><p>{{ store.address || "No address yet" }}</p></div>
-        <span class="arrow">↗</span>
+      <RouterLink
+        class="store-card-link"
+        :to="{ name: 'store-detail', params: { id: store.id }, query: query.trim() ? { q: query.trim() } : {} }"
+      >
+        <div class="store-card-top">
+          <div><h2>{{ store.name }}</h2><p>{{ store.address || "No address yet" }}</p></div>
+          <span class="arrow">↗</span>
+        </div>
+        <div v-if="acceptedMethods(store).length" class="method-tags">
+          <span v-for="item in acceptedMethods(store).slice(0, 5)" :key="item.payment_method.id">{{ item.payment_method.name }}</span>
+          <span v-if="acceptedMethods(store).length > 5">+{{ acceptedMethods(store).length - 5 }}</span>
+        </div>
+        <p v-else class="no-methods">No accepted payment methods confirmed yet</p>
+      </RouterLink>
+      <div class="store-card-foot">
+        <span>Updated {{ new Date(store.updated_at).toLocaleDateString("en-US") }}</span>
+        <button
+          class="store-delete-button"
+          type="button"
+          :disabled="deletingId !== null"
+          @click="removeStore(store)"
+        >
+          {{ deletingId === store.id ? "Deleting…" : "Delete" }}
+        </button>
       </div>
-      <div v-if="acceptedMethods(store).length" class="method-tags">
-        <span v-for="item in acceptedMethods(store).slice(0, 5)" :key="item.payment_method.id">{{ item.payment_method.name }}</span>
-        <span v-if="acceptedMethods(store).length > 5">+{{ acceptedMethods(store).length - 5 }}</span>
-      </div>
-      <p v-else class="no-methods">No accepted payment methods confirmed yet</p>
-      <div class="store-card-foot">Updated {{ new Date(store.updated_at).toLocaleDateString("en-US") }}</div>
-    </RouterLink>
+    </article>
   </div>
   <div v-else class="empty-state">
     <h2>No stores match your search</h2>
