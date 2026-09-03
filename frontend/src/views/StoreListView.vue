@@ -53,7 +53,12 @@ onMounted(search)
   <p v-if="error" class="alert error">{{ error }}</p>
   <div v-else-if="loading" class="empty-state">Loading stores…</div>
   <div v-else-if="stores.length" class="store-grid">
-    <RouterLink v-for="store in stores" :key="store.id" class="store-card" :to="`/stores/${store.id}`">
+    <RouterLink
+      v-for="store in stores"
+      :key="store.id"
+      class="store-card"
+      :to="{ name: 'store-detail', params: { id: store.id }, query: query.trim() ? { q: query.trim() } : {} }"
+    >
       <div class="store-card-top">
         <div><h2>{{ store.name }}</h2><p>{{ store.address || "No address yet" }}</p></div>
         <span class="arrow">↗</span>
@@ -71,4 +76,3 @@ onMounted(search)
     <p>Try different keywords, or add a new store.</p>
   </div>
 </template>
-

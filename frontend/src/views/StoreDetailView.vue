@@ -1,12 +1,13 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 
 import PaymentMethodEditor from "../components/PaymentMethodEditor.vue"
 import { apiErrorMessage, getStore, listPaymentMethods, updateStore } from "../api"
 
 const props = defineProps({ id: { type: String, required: true } })
 const route = useRoute()
+const router = useRouter()
 const store = ref(null)
 const methods = ref([])
 const statuses = reactive({})
@@ -17,6 +18,10 @@ const error = ref("")
 const notice = ref(route.query.created ? "The store has been added." : "")
 
 const confirmedCount = computed(() => Object.values(statuses).filter((status) => status !== "unknown").length)
+const listRoute = computed(() => ({
+  name: "stores",
+  query: route.query.q ? { q: String(route.query.q) } : {},
+}))
 
 function updateStatus(id, status) {
   statuses[id] = status
@@ -49,7 +54,7 @@ async function save() {
       address: form.address.trim(),
       payment_statuses: methods.value.map((method) => ({ payment_method_id: method.id, status: statuses[method.id] })),
     })
-    notice.value = "Your changes have been saved."
+    await router.push(listRoute.value)
   } catch (err) {
     error.value = apiErrorMessage(err)
   } finally {
@@ -62,9 +67,9 @@ onMounted(load)
 
 <template>
   <div v-if="loading" class="empty-state">Loading store details…</div>
-  <div v-else-if="!store" class="empty-state"><h1>This store cannot be shown</h1><p>{{ error }}</p><RouterLink class="button primary" to="/stores">Back to the list</RouterLink></div>
+  <div v-else-if="!store" class="empty-state"><h1>This store cannot be shown</h1><p>{{ error }}</p><RouterLink class="button primary" :to="listRoute">Back to the list</RouterLink></div>
   <template v-else>
-    <div class="breadcrumb"><RouterLink to="/stores">Stores</RouterLink><span>/</span><span>{{ store.name }}</span></div>
+    <div class="breadcrumb"><RouterLink :to="listRoute">Stores</RouterLink><span>/</span><span>{{ store.name }}</span></div>
     <section class="detail-heading">
       <div><p class="eyebrow">STORE #{{ store.id }}</p><h1>{{ store.name }}</h1><p>{{ store.address || "No address yet" }}</p></div>
       <div class="confirm-stat"><strong>{{ confirmedCount }}</strong><span>/ {{ methods.length }} confirmed</span></div>
@@ -100,4 +105,3 @@ onMounted(load)
     </form>
   </template>
 </template>
-
