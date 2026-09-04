@@ -19,7 +19,9 @@ onMounted(async () => {
   <section class="hero">
     <div class="hero-copy">
       <p class="eyebrow">PAYMENT METHOD DIRECTORY</p>
-      <h1>At that store,<br><em>what can you pay with?</em></h1>
+      <h1>At that store,<br>
+        <em>what can you pay with?</em>
+      </h1>
       <p class="lead">Search the payment methods each store accepts, and keep the information up to date together.</p>
       <div class="hero-actions">
         <RouterLink class="button primary" to="/stores">Search stores</RouterLink>
