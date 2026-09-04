@@ -16,9 +16,9 @@ const error = ref("")
 
 const canReview = computed(() => form.name.trim() && !loading.value)
 const statusLabels = {
-  accepted: "Accepted",
-  not_accepted: "Not accepted",
-  unknown: "Unknown",
+  accepted: "⚪︎",
+  not_accepted: "×",
+  unknown: "？",
 }
 
 function updateStatus(id, status) {
