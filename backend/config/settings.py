@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
+    "rest_framework.authtoken",
     "stores",
 ]
 
@@ -134,8 +135,8 @@ APP_ACCESS_MAX_AGE = int(os.environ.get("APP_ACCESS_MAX_AGE", 60 * 60 * 24 * 30)
 
 REST_FRAMEWORK = {
     # Everything needs the app password; the token is issued by /api/access/.
-    "DEFAULT_PERMISSION_CLASSES": ["stores.access.HasAppAccess"],
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.TokenAuthentication"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     # One password guards the whole app, so it is one target worth guessing at.
     # Only /api/access/ carries this scope; the rest of the API is unthrottled.
