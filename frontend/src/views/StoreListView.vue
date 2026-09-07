@@ -81,7 +81,20 @@ onMounted(search)
       >
         <div class="store-card-top">
           <div><h2>{{ store.name }}</h2><p>{{ store.address || "No address yet" }}</p></div>
-          <span class="arrow">↗</span>
+          <span class="arrow" aria-label="Edit">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+            </svg>
+            <span class="edit-label">Edit</span>
+          </span>
         </div>
         <div v-if="acceptedMethods(store).length" class="method-tags">
           <span v-for="item in acceptedMethods(store).slice(0, 5)" :key="item.payment_method.id">{{ item.payment_method.name }}</span>
