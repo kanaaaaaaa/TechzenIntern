@@ -28,7 +28,7 @@ class StoreViewSet(viewsets.ModelViewSet):
     serializer_class = StoreSerializer
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["name", "normalized_name", "address"]
-    ordering_fields = ["name", "updated_at", "created_at"]
+    ordering_fields = ["name", "latitude", "longitude", "updated_at", "created_at"]
     ordering = ["name", "id"]
 
     def get_queryset(self):

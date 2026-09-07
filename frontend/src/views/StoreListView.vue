@@ -59,9 +59,9 @@ onMounted(search)
   </section>
 
   <form class="search-panel" @submit.prevent="search">
-    <label for="store-search">Store name or address</label>
+    <label class="visually-hidden" for="store-search">Store name or address</label>
     <div class="search-row">
-      <input id="store-search" v-model="query" placeholder="e.g. Shibuya, Station Market" autofocus>
+      <input id="store-search" v-model="query" placeholder="Store name or address" autofocus>
       <button class="button primary" type="submit">Search</button>
     </div>
   </form>
@@ -80,7 +80,11 @@ onMounted(search)
         :to="{ name: 'store-detail', params: { id: store.id }, query: query.trim() ? { q: query.trim() } : {} }"
       >
         <div class="store-card-top">
-          <div><h2>{{ store.name }}</h2><p>{{ store.address || "No address yet" }}</p></div>
+          <div>
+            <h2>{{ store.name }}</h2>
+            <p>{{ store.address || "No address yet" }}</p>
+            <p v-if="store.latitude !== null && store.longitude !== null">{{ store.latitude }}, {{ store.longitude }}</p>
+          </div>
           <span class="arrow" aria-label="Edit">
             <svg
               viewBox="0 0 24 24"
@@ -92,9 +96,9 @@ onMounted(search)
             >
               <path d="M12 20h9" />
               <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
-            </svg>
+              </svg>
             <span class="edit-label">Edit</span>
-          </span>
+        </span>
         </div>
         <div v-if="acceptedMethods(store).length" class="method-tags">
           <span v-for="item in acceptedMethods(store).slice(0, 5)" :key="item.payment_method.id">{{ item.payment_method.name }}</span>

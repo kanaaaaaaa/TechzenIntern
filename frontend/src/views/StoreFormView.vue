@@ -8,7 +8,7 @@ import { apiErrorMessage, createStore, listPaymentMethods } from "../api"
 const router = useRouter()
 const methods = ref([])
 const statuses = reactive({})
-const form = reactive({ name: "", address: "" })
+const form = reactive({ name: "", address: "", latitude: "", longitude: "" })
 const loading = ref(true)
 const saving = ref(false)
 const confirming = ref(false)
@@ -23,6 +23,11 @@ const statusLabels = {
 
 function updateStatus(id, status) {
   statuses[id] = status
+}
+
+function optionalCoordinate(value) {
+  const trimmed = String(value).trim()
+  return trimmed === "" ? null : trimmed
 }
 
 async function load() {
@@ -56,6 +61,8 @@ async function save() {
     await createStore({
       name: form.name.trim(),
       address: form.address.trim(),
+      latitude: optionalCoordinate(form.latitude),
+      longitude: optionalCoordinate(form.longitude),
       payment_statuses: methods.value.map((method) => ({
         payment_method_id: method.id,
         status: statuses[method.id],
@@ -93,6 +100,8 @@ onMounted(load)
         <div class="field-grid">
           <label>Store name <span>Required</span><input v-model="form.name" required maxlength="160" placeholder="e.g. Station Market"></label>
           <label>Address <small>Optional</small><input v-model="form.address" maxlength="255" placeholder="e.g. 1-2-3 Shibuya, Shibuya-ku, Tokyo"></label>
+          <label>Latitude <small>Optional</small><input v-model="form.latitude" type="number" min="-90" max="90" step="0.000001" placeholder="e.g. 16.081259"></label>
+          <label>Longitude <small>Optional</small><input v-model="form.longitude" type="number" min="-180" max="180" step="0.000001" placeholder="e.g. 108.222577"></label>
         </div>
       </div>
     </section>
@@ -127,6 +136,10 @@ onMounted(load)
           <div>
             <dt>Address</dt>
             <dd>{{ form.address.trim() || "No address" }}</dd>
+          </div>
+          <div>
+            <dt>Coordinates</dt>
+            <dd>{{ form.latitude !== "" && form.longitude !== "" ? `${form.latitude}, ${form.longitude}` : "No coordinates" }}</dd>
           </div>
         </dl>
       </div>
