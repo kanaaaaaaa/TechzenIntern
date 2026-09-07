@@ -59,9 +59,9 @@ onMounted(search)
   </section>
 
   <form class="search-panel" @submit.prevent="search">
-    <label for="store-search">Store name or address</label>
+    <label class="visually-hidden" for="store-search">Store name or address</label>
     <div class="search-row">
-      <input id="store-search" v-model="query" placeholder="e.g. Shibuya, Station Market" autofocus>
+      <input id="store-search" v-model="query" placeholder="Store name or address" autofocus>
       <button class="button primary" type="submit">Search</button>
     </div>
   </form>

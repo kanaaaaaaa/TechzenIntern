@@ -6,7 +6,7 @@ import { clearToken } from "./auth"
 
 const route = useRoute()
 const router = useRouter()
-const showNav = computed(() => route.name !== "login")
+const showNav = computed(() => route.name !== "login" && route.name !== "home")
 
 function lock() {
   clearToken()
