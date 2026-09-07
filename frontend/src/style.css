@@ -88,7 +88,9 @@ input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(23, 107, 77
 .store-card-top { display: flex; justify-content: space-between; gap: 20px; }
 .store-card h2 { margin: 0; font-size: 20px; }
 .store-card p { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
-.arrow { color: var(--green); font-size: 22px; }
+.arrow {color: var(--green);display: inline-flex;align-items: center;gap: 6px;}
+.arrow svg {width: 24px;height: 24px;}
+.edit-label {font-size: 20px;font-weight: 700;}
 .method-tags { margin: 26px 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .method-tags span { padding: 5px 9px; border-radius: 3px; background: #e4efdf; color: var(--green); font: 600 10px var(--mono); }
 .store-card .no-methods { margin: 27px 0 9px; }
