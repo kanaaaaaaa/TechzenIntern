@@ -37,6 +37,8 @@ class StoreSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "address",
+            "latitude",
+            "longitude",
             "payment_methods",
             "payment_statuses",
             "created_at",
@@ -45,13 +47,23 @@ class StoreSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "updated_at"]
 
     def validate(self, attrs):
+        latitude = attrs.get("latitude", getattr(self.instance, "latitude", None))
+        longitude = attrs.get("longitude", getattr(self.instance, "longitude", None))
+        if (latitude is None) != (longitude is None):
+            raise serializers.ValidationError(
+                "Latitude and longitude must either both be supplied or both be empty."
+            )
         candidate = Store(
             pk=self.instance.pk if self.instance else None,
             name=attrs.get("name", getattr(self.instance, "name", "")),
             address=attrs.get("address", getattr(self.instance, "address", "")),
+            latitude=latitude,
+            longitude=longitude,
         )
         if candidate.duplicates().exists():
-            raise serializers.ValidationError("A store with this name and address already exists.")
+            raise serializers.ValidationError(
+                "A store with this name, address and coordinates already exists."
+            )
         return attrs
 
     def validate_payment_statuses(self, values):
@@ -100,4 +112,3 @@ class StoreSerializer(serializers.ModelSerializer):
         if statuses is not None:
             self._save_statuses(instance, statuses)
         return instance
-

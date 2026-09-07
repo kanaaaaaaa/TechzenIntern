@@ -80,7 +80,11 @@ onMounted(search)
         :to="{ name: 'store-detail', params: { id: store.id }, query: query.trim() ? { q: query.trim() } : {} }"
       >
         <div class="store-card-top">
-          <div><h2>{{ store.name }}</h2><p>{{ store.address || "No address yet" }}</p></div>
+          <div>
+            <h2>{{ store.name }}</h2>
+            <p>{{ store.address || "No address yet" }}</p>
+            <p v-if="store.latitude !== null && store.longitude !== null">{{ store.latitude }}, {{ store.longitude }}</p>
+          </div>
           <span class="arrow">↗</span>
         </div>
         <div v-if="acceptedMethods(store).length" class="method-tags">

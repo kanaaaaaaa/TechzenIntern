@@ -38,7 +38,7 @@ class StorePaymentMethodInline(admin.TabularInline):
 
 @admin.register(Store)
 class StoreAdmin(admin.ModelAdmin):
-    list_display = ["name", "address", "updated_at"]
+    list_display = ["name", "address", "latitude", "longitude", "updated_at"]
     search_fields = ["name", "address"]
     inlines = [StorePaymentMethodInline]
 
@@ -55,4 +55,3 @@ class StorePaymentMethodAdmin(admin.ModelAdmin):
     list_display = ["store", "payment_method", "status", "confirmed_at"]
     list_filter = ["status", "payment_method__category"]
     search_fields = ["store__name", "payment_method__name"]
-

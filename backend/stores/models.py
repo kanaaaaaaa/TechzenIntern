@@ -1,6 +1,7 @@
 import unicodedata
 
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -13,6 +14,20 @@ class Store(models.Model):
     normalized_name = models.CharField(max_length=160, db_index=True, editable=False)
     address = models.CharField(max_length=255, blank=True)
     normalized_address = models.CharField(max_length=255, blank=True, editable=False)
+    latitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(-90), MaxValueValidator(90)],
+    )
+    longitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(-180), MaxValueValidator(180)],
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -20,25 +35,32 @@ class Store(models.Model):
         ordering = ["name", "id"]
         constraints = [
             models.UniqueConstraint(
-                fields=["normalized_name", "normalized_address"],
-                name="unique_store_name_address",
+                fields=["normalized_name", "normalized_address", "latitude", "longitude"],
+                name="unique_store_location",
+                nulls_distinct=False,
             ),
         ]
 
     def duplicates(self):
-        """Stores that already use this name and address."""
+        """Stores that already use this name, address and coordinates."""
         found = Store.objects.filter(
             normalized_name=normalize(self.name),
             normalized_address=normalize(self.address),
+            latitude=self.latitude,
+            longitude=self.longitude,
         )
         return found.exclude(pk=self.pk) if self.pk else found
 
     def clean(self):
         super().clean()
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValidationError(
+                "Latitude and longitude must either both be supplied or both be empty."
+            )
         # The constraint covers non-editable fields, which forms skip, so the
         # duplicate has to be reported from here to reach the admin site.
         if self.duplicates().exists():
-            raise ValidationError("A store with this name and address already exists.")
+            raise ValidationError("A store with this name, address and coordinates already exists.")
 
     def save(self, *args, **kwargs):
         self.normalized_name = normalize(self.name)
@@ -90,4 +112,3 @@ class StorePaymentMethod(models.Model):
 
     def __str__(self):
         return f"{self.store} - {self.payment_method}: {self.get_status_display()}"
-

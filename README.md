@@ -2,6 +2,54 @@
 
 A web app for searching, registering and updating the payment methods each store accepts.
 
+## Foursquare OS Placesからダナンの店舗を取得
+
+Python 3.9以上の仮想環境で追加依存関係をインストールします。
+
+```powershell
+pip install -r backend/requirements-places.txt
+```
+
+[Foursquare Places Portal](https://places.foursquare.com/) でアクセストークンを発行し、
+PowerShellの現在のセッションだけに設定して実行します。
+
+```powershell
+$env:FOURSQUARE_PLACES_TOKEN = "発行したアクセストークン"
+python backend/scripts/fetch_danang_places.py
+```
+
+または、`.env.example` を `.env` へコピーしてトークンを記入できます。`.env` は
+Gitの対象外です。
+
+既定では、ベトナム（`VN`）かつ `locality` または `region` がダナンで、
+閉店日が設定されていない場所をIceberg上で絞り込み、最初の10件を
+`backend/data/foursquare/danang_places.csv` に保存します。トークンはファイルへ保存しません。
+
+件数、出力形式、閉店済みデータの扱いは変更できます。
+
+```powershell
+python backend/scripts/fetch_danang_places.py --limit 100 --output backend/data/foursquare/danang_places.parquet
+python backend/scripts/fetch_danang_places.py --limit 10 --include-closed
+```
+
+### ANFADA Hotel Danang・Techzenの周辺1kmを取得
+
+次のコマンドは両拠点を囲む範囲をIceberg側で絞り込み、Haversine距離が正確に
+1,000m以内となる営業中の場所を件数制限なしで取得します。
+
+```powershell
+wsl --cd /mnt/c/Users/ganju/Desktop/PayMethodFinder --exec .venv/bin/python backend/scripts/fetch_nearby_places.py
+```
+
+以下の3ファイルが `backend/data/foursquare/` に出力されます。
+
+- `anfada_hotel_danang_1000m.csv`
+- `techzen_1000m.csv`
+- `danang_nearby_1000m.csv`（上記2ファイルの統合結果）
+
+各行には基準拠点、基準住所、拠点からの距離（`distance_meters`）も含まれます。
+半径は、例えば `--radius-meters 500` のように変更できます。
+
 The original static screens are kept in `ScreenPrototype/` for reference; the actual app is built with Vue 3 and Django REST Framework.
 
 ## Layout

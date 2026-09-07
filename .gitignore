@@ -4,6 +4,9 @@ __pycache__/
 .env
 backend/db.sqlite3
 backend/staticfiles/
+backend/data/foursquare/*.csv
+backend/data/foursquare/*.json
+backend/data/foursquare/*.parquet
 frontend/node_modules/
 frontend/dist/
 .DS_Store
