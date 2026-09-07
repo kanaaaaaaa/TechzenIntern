@@ -69,6 +69,29 @@ class StoreApiTests(UnlockedApiTestCase):
         self.assertEqual(len(address_response.data), 1)
         self.assertEqual(address_response.data[0]["name"], "Seaside Cafe")
 
+    def test_create_store_with_coordinates(self):
+        response = self.client.post(
+            reverse("store-list"),
+            {
+                "name": "Riverside Cafe",
+                "address": "Da Nang",
+                "latitude": "16.081259",
+                "longitude": "108.222577",
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["latitude"], "16.081259")
+        self.assertEqual(response.data["longitude"], "108.222577")
+
+    def test_rejects_only_one_coordinate(self):
+        response = self.client.post(
+            reverse("store-list"),
+            {"name": "Riverside Cafe", "latitude": "16.081259"},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_rejects_duplicate_payment_method_inputs(self):
         method = PaymentMethod.objects.first()
         response = self.client.post(
@@ -123,6 +146,21 @@ class StoreDuplicateTests(UnlockedApiTestCase):
 
         response = self.client.post(
             reverse("store-list"), {"name": "Corner Shop", "address": "2 Market Road"}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Store.objects.filter(name="Corner Shop").count(), 2)
+
+    def test_allows_same_name_and_blank_address_at_different_coordinates(self):
+        Store.objects.create(name="Corner Shop", latitude="16.081259", longitude="108.222577")
+
+        response = self.client.post(
+            reverse("store-list"),
+            {
+                "name": "Corner Shop",
+                "latitude": "16.081300",
+                "longitude": "108.222600",
+            },
         )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

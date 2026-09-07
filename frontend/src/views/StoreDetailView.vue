@@ -11,7 +11,7 @@ const router = useRouter()
 const store = ref(null)
 const methods = ref([])
 const statuses = reactive({})
-const form = reactive({ name: "", address: "" })
+const form = reactive({ name: "", address: "", latitude: "", longitude: "" })
 const loading = ref(true)
 const saving = ref(false)
 const error = ref("")
@@ -28,6 +28,11 @@ function updateStatus(id, status) {
   notice.value = ""
 }
 
+function optionalCoordinate(value) {
+  const trimmed = String(value).trim()
+  return trimmed === "" ? null : trimmed
+}
+
 async function load() {
   try {
     const [storeData, methodData] = await Promise.all([getStore(props.id), listPaymentMethods()])
@@ -35,6 +40,8 @@ async function load() {
     methods.value = methodData
     form.name = storeData.name
     form.address = storeData.address
+    form.latitude = storeData.latitude ?? ""
+    form.longitude = storeData.longitude ?? ""
     methodData.forEach((method) => { statuses[method.id] = "unknown" })
     storeData.payment_methods.forEach((item) => { statuses[item.payment_method.id] = item.status })
   } catch (err) {
@@ -52,6 +59,8 @@ async function save() {
     store.value = await updateStore(props.id, {
       name: form.name.trim(),
       address: form.address.trim(),
+      latitude: optionalCoordinate(form.latitude),
+      longitude: optionalCoordinate(form.longitude),
       payment_statuses: methods.value.map((method) => ({ payment_method_id: method.id, status: statuses[method.id] })),
     })
     await router.push(listRoute.value)
@@ -71,7 +80,12 @@ onMounted(load)
   <template v-else>
     <div class="breadcrumb"><RouterLink :to="listRoute">Stores</RouterLink><span>/</span><span>{{ store.name }}</span></div>
     <section class="detail-heading">
-      <div><p class="eyebrow">STORE #{{ store.id }}</p><h1>{{ store.name }}</h1><p>{{ store.address || "No address yet" }}</p></div>
+      <div>
+        <p class="eyebrow">STORE #{{ store.id }}</p>
+        <h1>{{ store.name }}</h1>
+        <p>{{ store.address || "No address yet" }}</p>
+        <p v-if="store.latitude !== null && store.longitude !== null">{{ store.latitude }}, {{ store.longitude }}</p>
+      </div>
       <div class="confirm-stat"><strong>{{ confirmedCount }}</strong><span>/ {{ methods.length }} confirmed</span></div>
     </section>
 
@@ -83,6 +97,8 @@ onMounted(load)
           <div class="field-grid">
             <label>Store name <span>Required</span><input v-model="form.name" required maxlength="160"></label>
             <label>Address <small>Optional</small><input v-model="form.address" maxlength="255"></label>
+            <label>Latitude <small>Optional</small><input v-model="form.latitude" type="number" min="-90" max="90" step="0.000001"></label>
+            <label>Longitude <small>Optional</small><input v-model="form.longitude" type="number" min="-180" max="180" step="0.000001"></label>
           </div>
         </div>
       </section>
