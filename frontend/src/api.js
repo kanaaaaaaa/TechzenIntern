@@ -11,7 +11,7 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = getToken()
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  if (token) config.headers.Authorization = `Token ${token}`
   return config
 })
 
@@ -19,7 +19,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // An expired or invalid token means the password has to be entered again.
-    if (error.response?.status === 403) {
+    if (error.response?.status === 401 || error.response?.status === 403) {
       clearToken()
       if (window.location.pathname !== "/login") window.location.assign("/login")
     }
@@ -27,8 +27,14 @@ api.interceptors.response.use(
   },
 )
 
-export const unlock = (password) =>
-  api.post("/access/", { password }).then((response) => response.data.token)
+export const register = (username) =>
+  api.post("/auth/register/", { username }).then((response) => response.data)
+
+export const login = (username) =>
+  api.post("/auth/login/", { username }).then((response) => response.data)
+
+export const logout = () =>
+  api.post("/auth/logout/")
 
 export const listStores = (params = {}) =>
   api.get("/stores/", { params }).then((response) => response.data)
