@@ -7,6 +7,8 @@ import { listStores } from "../api"
 const router = useRouter()
 const query = ref("")
 const storeCount = ref(null)
+//追加
+const userPoints = ref(null) // ポイントを保持する変数
 
 onMounted(async () => {
   try {
@@ -15,19 +17,18 @@ onMounted(async () => {
   } catch {
     storeCount.value = null
   }
+
+  // ポイント情報の取得を追加
+  try {
+    const data = await getUserPoints()
+    userPoints.value = data.points // バックエンドのレスポンス構造に合わせて調整（例: data.points など）
+  } catch {
+    userPoints.value = null
+  }
 })
 
 function search() {
   router.push({ name: "stores", query: query.value.trim() ? { q: query.value.trim() } : {} })
-}
-
-// API呼び出し関数を追加（以下変更点）
-export async function getUserPoints() {
-  const response = await fetch(`${API_URL}/user/points/`, {
-    headers: { 'Authorization': `Bearer ${getToken()}` }
-  })
-  if (!response.ok) throw new Error(response.statusText)
-  return response.json()
 }
 </script>
 
