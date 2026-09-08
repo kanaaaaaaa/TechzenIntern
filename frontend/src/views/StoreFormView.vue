@@ -16,9 +16,9 @@ const error = ref("")
 
 const canReview = computed(() => form.name.trim() && !loading.value)
 const statusLabels = {
-  accepted: "Accepted",
-  not_accepted: "Not accepted",
-  unknown: "Unknown",
+  accepted: "〇",
+  not_accepted: "×",
+  unknown: "？",
 }
 
 function updateStatus(id, status) {
@@ -80,16 +80,8 @@ onMounted(load)
 </script>
 
 <template>
-  <section v-if="!confirming" class="page-heading">
-    <p class="eyebrow">NEW STORE</p>
-    <h1>Add a store</h1>
-    <p>Enter the basic store details and the payment methods you can confirm right now.</p>
-  </section>
-
-  <section v-else class="page-heading confirmation-heading">
-    <p class="eyebrow">CONFIRM NEW STORE</p>
+  <section v-if="confirming" class="page-heading confirmation-heading">
     <h1>Please confirm the details.</h1>
-    <p>Check the information below. To make a change, select Cancel and return to the previous step.</p>
   </section>
 
   <form v-if="!confirming" class="editor-form" @submit.prevent="review">
