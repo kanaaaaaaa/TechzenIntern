@@ -13,6 +13,8 @@ from .serializers import PaymentMethodSerializer, StoreSerializer
 from rest_framework.decorators import action
 
 #以下変更点（場所ここであってる？）
+from django.db import transaction
+from .models import Store, UserPoints, PointHistory
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
