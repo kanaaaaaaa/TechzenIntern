@@ -61,9 +61,15 @@ function logout() {
       <RouterView />
     </main>
 
-    <footer class="site-footer">
-      <span>PayMethodFinder</span>
-      <span>A community-maintained payment method database</span>
+    <footer v-if="route.name === 'stores'" class="site-footer">
+      <RouterLink class="button secondary" to="/stores/new">Add a new store</RouterLink>
     </footer>
   </div>
 </template>
+</template>
+
+<script setup>
+import { useRoute } from "vue-router"
+
+const route = useRoute()
+</script>
