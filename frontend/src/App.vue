@@ -32,7 +32,9 @@ function logout() {
       <nav v-if="showHeaderActions" aria-label="Main navigation">
         <template v-if="showMainNav">
           <RouterLink to="/stores">Find stores</RouterLink>
-          <RouterLink class="nav-primary" to="/stores/new">Add a store</RouterLink>
+          <RouterLink class="nav-primary" to="/stores/new">
+            Add a store
+          </RouterLink>
         </template>
 
         <button
@@ -62,14 +64,9 @@ function logout() {
     </main>
 
     <footer v-if="route.name === 'stores'" class="site-footer">
-      <RouterLink class="button secondary" to="/stores/new">Add a new store</RouterLink>
+      <RouterLink class="button secondary" to="/stores/new">
+        Add a new store
+      </RouterLink>
     </footer>
   </div>
 </template>
-</template>
-
-<script setup>
-import { useRoute } from "vue-router"
-
-const route = useRoute()
-</script>
