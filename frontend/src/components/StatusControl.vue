@@ -7,7 +7,7 @@ defineEmits(["update:modelValue"])
 
 const options = [
   { value: "accepted", label: "⚪︎" },
-  { value: "not accepted", label: "×" },
+  { value: "not_accepted", label: "×" },
   { value: "unknown", label: "？" },
 ]
 </script>
