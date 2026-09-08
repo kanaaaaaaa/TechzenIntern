@@ -2,8 +2,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import PaymentMethod, Store, StorePaymentMethod
-
+from .models import PaymentMethod, Store, StoreFeedback, StorePaymentMethod
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
     category_label = serializers.CharField(source="get_category_display", read_only=True)
@@ -31,6 +30,10 @@ class StoreSerializer(serializers.ModelSerializer):
     payment_methods = StorePaymentMethodSerializer(many=True, read_only=True)
     payment_statuses = PaymentStatusInputSerializer(many=True, write_only=True, required=False)
 
+    helpful_count = serializers.SerializerMethodField()
+    not_helpful_count = serializers.SerializerMethodField()
+    my_feedback = serializers.SerializerMethodField()
+
     class Meta:
         model = Store
         fields = [
@@ -41,10 +44,36 @@ class StoreSerializer(serializers.ModelSerializer):
             "longitude",
             "payment_methods",
             "payment_statuses",
+            "helpful_count",
+            "not_helpful_count",
+            "my_feedback",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    def get_helpful_count(self, obj):
+        return obj.feedback_votes.filter(
+            vote=StoreFeedback.Vote.HELPFUL
+        ).count()
+
+    def get_not_helpful_count(self, obj):
+        return obj.feedback_votes.filter(
+            vote=StoreFeedback.Vote.NOT_HELPFUL
+        ).count()
+
+    def get_my_feedback(self, obj):
+        request = self.context.get("request")
+
+        if not request or not request.user.is_authenticated:
+            return None
+
+        return (
+            obj.feedback_votes
+            .filter(user=request.user)
+            .values_list("vote", flat=True)
+            .first()
+        )
 
     def validate(self, attrs):
         latitude = attrs.get("latitude", getattr(self.instance, "latitude", None))

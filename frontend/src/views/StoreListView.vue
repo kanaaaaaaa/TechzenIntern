@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
-import { apiErrorMessage, deleteStore, listStores } from "../api"
+import { apiErrorMessage, deleteStore, listStores, submitStoreFeedback } from "../api"
 
 const route = useRoute()
 const router = useRouter()
@@ -10,6 +10,7 @@ const query = ref(String(route.query.q || ""))
 const stores = ref([])
 const loading = ref(true)
 const deletingId = ref(null)
+const votingId = ref(null)
 const error = ref("")
 
 const resultLabel = computed(() =>
@@ -30,6 +31,25 @@ async function search() {
     error.value = apiErrorMessage(err)
   } finally {
     loading.value = false
+  }
+}
+
+async function vote(store, voteType) {
+  const nextVote = store.my_feedback === voteType ? null : voteType
+
+  votingId.value = store.id
+  error.value = ""
+
+  try {
+    const result = await submitStoreFeedback(store.id, nextVote)
+
+    store.helpful_count = result.helpful_count
+    store.not_helpful_count = result.not_helpful_count
+    store.my_feedback = result.my_feedback
+  } catch (err) {
+    error.value = apiErrorMessage(err)
+  } finally {
+    votingId.value = null
   }
 }
 
@@ -102,15 +122,70 @@ onMounted(search)
         <p v-else class="no-methods">No accepted payment methods confirmed yet</p>
       </RouterLink>
       <div class="store-card-foot">
-        <span>Updated {{ new Date(store.updated_at).toLocaleDateString("en-US") }}</span>
-        <button
-          class="store-delete-button"
-          type="button"
-          :disabled="deletingId !== null"
-          @click="removeStore(store)"
-        >
-          {{ deletingId === store.id ? "Deleting…" : "Delete" }}
-        </button>
+        <div class="store-card-meta">
+          <span>Updated {{ new Date(store.updated_at).toLocaleDateString("en-US") }}</span>
+
+          <button
+            class="store-delete-button"
+            type="button"
+            :disabled="deletingId !== null"
+            @click="removeStore(store)"
+          >
+            {{ deletingId === store.id ? "Deleting…" : "Delete" }}
+          </button>
+        </div>
+
+        <div class="store-feedback">
+          <span class="feedback-question">Did this information help?</span>
+
+          <div class="feedback-buttons">
+            <button
+              type="button"
+              class="feedback-button"
+              :class="{ active: store.my_feedback === 'helpful' }"
+              :disabled="votingId === store.id"
+              aria-label="Helpful"
+              @click="vote(store, 'helpful')"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M7 10v12H3V10h4Z" />
+                <path d="M7 20h10.5a2 2 0 0 0 2-1.6l1.4-7A2 2 0 0 0 19 9h-5l1-4a2 2 0 0 0-3.8-1.2L7 10" />
+              </svg>
+
+              <span>{{ store.helpful_count }}</span>
+            </button>
+
+            <button
+              type="button"
+              class="feedback-button"
+              :class="{ active: store.my_feedback === 'not_helpful' }"
+              :disabled="votingId === store.id"
+              aria-label="Not helpful"
+              @click="vote(store, 'not_helpful')"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M7 14V2H3v12h4Z" />
+                <path d="M7 4h10.5a2 2 0 0 1 2 1.6l1.4 7A2 2 0 0 1 19 15h-5l1 4a2 2 0 0 1-3.8 1.2L7 14" />
+              </svg>
+
+              <span>{{ store.not_helpful_count }}</span>
+            </button>
+          </div>
+        </div>
       </div>
     </article>
   </div>
