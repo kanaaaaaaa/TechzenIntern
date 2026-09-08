@@ -21,8 +21,7 @@ function search() {
   router.push({ name: "stores", query: query.value.trim() ? { q: query.value.trim() } : {} })
 }
 
-//以下変更点
-// API呼び出し関数を追加
+// API呼び出し関数を追加（以下変更点）
 export async function getUserPoints() {
   const response = await fetch(`${API_URL}/user/points/`, {
     headers: { 'Authorization': `Bearer ${getToken()}` }

@@ -34,7 +34,7 @@ class Store(models.Model):
     #以下変更点
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        null=True,
+        null=True,  # 既存データのため
         blank=True,
         related_name="created_stores",
         on_delete=models.SET_NULL,
@@ -148,6 +148,7 @@ class StorePaymentMethod(models.Model):
     def __str__(self):
         return f"{self.store} - {self.payment_method}: {self.get_status_display()}"
 
+
 class UserPoints(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -157,6 +158,9 @@ class UserPoints(models.Model):
     points = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "User points"
 
     def __str__(self):
         return f"{self.user.username}: {self.points}p"
@@ -176,6 +180,10 @@ class PointHistory(models.Model):
     action_type = models.CharField(max_length=20, choices=ActionType.choices)
     points = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Point histories"
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.user.username} - {self.get_action_type_display()} ({self.points}p)"

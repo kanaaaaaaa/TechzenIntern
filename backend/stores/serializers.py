@@ -33,6 +33,7 @@ class StoreSerializer(serializers.ModelSerializer):
     helpful_count = serializers.SerializerMethodField()
     not_helpful_count = serializers.SerializerMethodField()
     my_feedback = serializers.SerializerMethodField()
+    #追加
     created_by = serializers.StringRelatedField(read_only=True)
 
     class Meta:
