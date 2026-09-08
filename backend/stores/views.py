@@ -8,8 +8,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .access import issue_token, password_matches
-from .models import PaymentMethod, Store, StorePaymentMethod
+from .models import PaymentMethod, Store, StoreFeedback, StorePaymentMethod
 from .serializers import PaymentMethodSerializer, StoreSerializer
+from rest_framework.decorators import action
 
 User = get_user_model()
 
@@ -97,6 +98,43 @@ class StoreViewSet(viewsets.ModelViewSet):
         statuses = StorePaymentMethod.objects.select_related("payment_method")
         return Store.objects.prefetch_related(Prefetch("payment_methods", queryset=statuses))
 
+    @action(detail=True, methods=["post"])
+    def feedback(self, request, pk=None):
+        store = self.get_object()
+        vote = request.data.get("vote")
+
+        if vote is None:
+            StoreFeedback.objects.filter(
+                store=store,
+                user=request.user,
+            ).delete()
+            current_vote = None
+
+        elif vote in [
+            StoreFeedback.Vote.HELPFUL,
+            StoreFeedback.Vote.NOT_HELPFUL,
+        ]:
+            StoreFeedback.objects.update_or_create(
+                store=store,
+                user=request.user,
+                defaults={"vote": vote},
+            )
+            current_vote = vote
+
+        else:
+            raise ValidationError(
+                {"vote": ["Vote must be helpful, not_helpful, or null."]}
+            )
+
+        return Response({
+            "helpful_count": store.feedback_votes.filter(
+                vote=StoreFeedback.Vote.HELPFUL
+            ).count(),
+            "not_helpful_count": store.feedback_votes.filter(
+                vote=StoreFeedback.Vote.NOT_HELPFUL
+            ).count(),
+            "my_feedback": current_vote,
+        })
 
 class PaymentMethodViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PaymentMethodSerializer

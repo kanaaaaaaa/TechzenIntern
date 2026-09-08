@@ -1,5 +1,6 @@
 import unicodedata
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -70,6 +71,32 @@ class Store(models.Model):
     def __str__(self):
         return self.name
 
+class StoreFeedback(models.Model):
+    class Vote(models.TextChoices):
+        HELPFUL = "helpful", "Helpful"
+        NOT_HELPFUL = "not_helpful", "Not helpful"
+
+    store = models.ForeignKey(
+        Store,
+        related_name="feedback_votes",
+        on_delete=models.CASCADE,
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="store_feedback_votes",
+        on_delete=models.CASCADE,
+    )
+    vote = models.CharField(max_length=20, choices=Vote.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["store", "user"],
+                name="unique_store_feedback_user",
+            ),
+        ]
 
 class PaymentMethod(models.Model):
     class Category(models.TextChoices):
