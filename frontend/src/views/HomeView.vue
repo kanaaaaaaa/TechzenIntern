@@ -20,15 +20,6 @@ onMounted(async () => {
 function search() {
   router.push({ name: "stores", query: query.value.trim() ? { q: query.value.trim() } : {} })
 }
-
-// API呼び出し関数を追加（変更点）
-export async function getUserPoints() {
-  const response = await fetch(`${API_URL}/user/points/`, {
-    headers: { 'Authorization': `Bearer ${getToken()}` }
-  })
-  if (!response.ok) throw new Error(response.statusText)
-  return response.json()
-}
 </script>
 
 <template>

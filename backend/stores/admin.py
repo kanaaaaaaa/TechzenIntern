@@ -2,8 +2,6 @@ from django.contrib import admin
 
 from .models import PaymentMethod, Store, StorePaymentMethod
 
-from .models import UserPoints, PointHistory
-
 
 class StorePaymentMethodInline(admin.TabularInline):
     model = StorePaymentMethod
@@ -57,16 +55,3 @@ class StorePaymentMethodAdmin(admin.ModelAdmin):
     list_display = ["store", "payment_method", "status", "confirmed_at"]
     list_filter = ["status", "payment_method__category"]
     search_fields = ["store__name", "payment_method__name"]
-
-@admin.register(UserPoints)
-class UserPointsAdmin(admin.ModelAdmin):
-    list_display = ['user', 'points', 'updated_at']
-    search_fields = ['user__username']
-    readonly_fields = ['user', 'created_at', 'updated_at']
-
-@admin.register(PointHistory)
-class PointHistoryAdmin(admin.ModelAdmin):
-    list_display = ['user', 'action_type', 'points', 'store', 'created_at']
-    list_filter = ['action_type', 'created_at']
-    search_fields = ['user__username', 'store__name']
-    readonly_fields = ['user', 'store', 'action_type', 'points', 'created_at']
