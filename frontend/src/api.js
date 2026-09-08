@@ -2,8 +2,6 @@ import axios from "axios"
 
 import { clearToken, getToken } from "./auth"
 
-export const submitStoreFeedback = (id, vote) =>
-  api.post(`/stores/${id}/feedback/`, { vote }).then((response) => response.data)
 
 export const api = axios.create({
   // In a build, Django serves the app from the same origin, so /api is enough.
@@ -52,6 +50,9 @@ export const updateStore = (id, payload) =>
 
 export const deleteStore = (id) =>
   api.delete(`/stores/${id}/`)
+
+export const submitStoreFeedback = (id, vote) =>
+  api.post(`/stores/${id}/feedback/`, { vote }).then((response) => response.data)
 
 export const listPaymentMethods = () =>
   api.get("/payment-methods/").then((response) => response.data)

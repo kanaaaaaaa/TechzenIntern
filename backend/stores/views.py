@@ -108,7 +108,6 @@ class StoreViewSet(viewsets.ModelViewSet):
                 store=store,
                 user=request.user,
             ).delete()
-
             current_vote = None
 
         elif vote in [
@@ -120,7 +119,6 @@ class StoreViewSet(viewsets.ModelViewSet):
                 user=request.user,
                 defaults={"vote": vote},
             )
-
             current_vote = vote
 
         else:
@@ -137,7 +135,6 @@ class StoreViewSet(viewsets.ModelViewSet):
             ).count(),
             "my_feedback": current_vote,
         })
-
 
 class PaymentMethodViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PaymentMethodSerializer

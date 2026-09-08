@@ -33,7 +33,7 @@ function search() {
           <button class="button primary" type="submit">Search</button>
         </div>
       </form>
-      <p class="lead">Please add store information for everyone.</p>
+      <p class="lead">Please add store information <br class="mobile-break">for everyone.</p>
       <div class="hero-actions">
         <RouterLink class="button secondary" to="/stores/new">Add a new store</RouterLink>
       </div>

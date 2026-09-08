@@ -17,8 +17,10 @@ const resultLabel = computed(() =>
   loading.value ? "Searching" : `${stores.value.length} store hits`,
 )
 
-function acceptedMethods(store) {
-  return store.payment_methods.filter((item) => item.status === "accepted")
+const statusSymbols = {
+  accepted: "〇",
+  not_accepted: "×",
+  unknown: "？",
 }
 
 async function search() {
@@ -42,7 +44,6 @@ async function vote(store, voteType) {
 
   try {
     const result = await submitStoreFeedback(store.id, nextVote)
-
     store.helpful_count = result.helpful_count
     store.not_helpful_count = result.not_helpful_count
     store.my_feedback = result.my_feedback
@@ -115,9 +116,8 @@ onMounted(search)
             <span class="edit-label">Edit</span>
         </span>
         </div>
-        <div v-if="acceptedMethods(store).length" class="method-tags">
-          <span v-for="item in acceptedMethods(store).slice(0, 5)" :key="item.payment_method.id">{{ item.payment_method.name }}</span>
-          <span v-if="acceptedMethods(store).length > 5">+{{ acceptedMethods(store).length - 5 }}</span>
+        <div v-if="store.payment_methods.length" class="method-tags">
+          <span v-for="item in store.payment_methods" :key="item.payment_method.id" :class="item.status">{{ statusSymbols[item.status] }}｜{{ item.payment_method.name }}</span>
         </div>
         <p v-else class="no-methods">No accepted payment methods confirmed yet</p>
       </RouterLink>
@@ -158,7 +158,6 @@ onMounted(search)
                 <path d="M7 10v12H3V10h4Z" />
                 <path d="M7 20h10.5a2 2 0 0 0 2-1.6l1.4-7A2 2 0 0 0 19 9h-5l1-4a2 2 0 0 0-3.8-1.2L7 10" />
               </svg>
-
               <span>{{ store.helpful_count }}</span>
             </button>
 
@@ -181,7 +180,6 @@ onMounted(search)
                 <path d="M7 14V2H3v12h4Z" />
                 <path d="M7 4h10.5a2 2 0 0 1 2 1.6l1.4 7A2 2 0 0 1 19 15h-5l1 4a2 2 0 0 1-3.8 1.2L7 14" />
               </svg>
-
               <span>{{ store.not_helpful_count }}</span>
             </button>
           </div>
