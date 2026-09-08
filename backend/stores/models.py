@@ -31,9 +31,10 @@ class Store(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    #以下変更点
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        null=True,  # 既存データのため
+        null=True,
         blank=True,
         related_name="created_stores",
         on_delete=models.SET_NULL,
