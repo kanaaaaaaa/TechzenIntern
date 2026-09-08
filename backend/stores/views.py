@@ -184,3 +184,28 @@ class PaymentMethodViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return PaymentMethod.objects.filter(is_active=True)
+
+
+#以下変更点その２
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_points(request):
+    """ログイン中のユーザーのポイント情報を取得"""
+    user_points, _ = UserPoints.objects.get_or_create(user=request.user)
+    history = PointHistory.objects.filter(user=request.user).order_by('-created_at')[:10]
+    
+    return Response({
+        'total_points': user_points.points,
+        'recent_history': [
+            {
+                'action': item.get_action_type_display(),
+                'points': item.points,
+                'store_name': item.store.name,
+                'created_at': item.created_at,
+            }
+            for item in history
+        ]
+    })
