@@ -122,10 +122,46 @@ class StoreViewSet(viewsets.ModelViewSet):
     search_fields = ["name", "normalized_name", "address"]
     ordering_fields = ["name", "latitude", "longitude", "updated_at", "created_at"]
     ordering = ["name", "id"]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         statuses = StorePaymentMethod.objects.select_related("payment_method")
         return Store.objects.prefetch_related(Prefetch("payment_methods", queryset=statuses))
+
+    def perform_create(self, serializer):
+        """新店舗作成時に +3 ポイント"""
+        with transaction.atomic():
+            store = serializer.save(created_by=self.request.user)
+            self._award_points(
+                user=self.request.user,
+                store=store,
+                action_type=PointHistory.ActionType.CREATE_STORE,
+                points=3
+            )
+
+    def perform_update(self, serializer):
+        """店舗編集時に +1 ポイント"""
+        with transaction.atomic():
+            store = serializer.save()
+            self._award_points(
+                user=self.request.user,
+                store=store,
+                action_type=PointHistory.ActionType.EDIT_STORE,
+                points=1
+            )
+
+    def _award_points(self, user, store, action_type, points):
+        """ポイント付与の共通処理"""
+        user_points, _ = UserPoints.objects.get_or_create(user=user)
+        user_points.points += points
+        user_points.save(update_fields=["points", "updated_at"])
+        
+        PointHistory.objects.create(
+            user=user,
+            store=store,
+            action_type=action_type,
+            points=points
+        )
 
     @action(detail=True, methods=["post"])
     def feedback(self, request, pk=None):
@@ -165,43 +201,6 @@ class StoreViewSet(viewsets.ModelViewSet):
             "my_feedback": current_vote,
         })
 
-    #変更点
-    permission_classes = [IsAuthenticated]  # 認証必須に変更
-
-    def perform_create(self, serializer):
-        """新店舗作成時に +3 ポイント"""
-        with transaction.atomic():
-            store = serializer.save(created_by=self.request.user)
-            self._award_points(
-                user=self.request.user,
-                store=store,
-                action_type=PointHistory.ActionType.CREATE_STORE,
-                points=3
-            )
-    
-    def perform_update(self, serializer):
-        """店舗編集時に +1 ポイント"""
-        with transaction.atomic():
-            store = serializer.save()
-            self._award_points(
-                user=self.request.user,
-                store=store,
-                action_type=PointHistory.ActionType.EDIT_STORE,
-                points=1
-            )
-    
-    def _award_points(self, user, store, action_type, points):
-        """ポイント付与の共通処理"""
-        user_points, _ = UserPoints.objects.get_or_create(user=user)
-        user_points.points += points
-        user_points.save(update_fields=["points", "updated_at"])
-        
-        PointHistory.objects.create(
-            user=user,
-            store=store,
-            action_type=action_type,
-            points=points
-        )
 
 class PaymentMethodViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PaymentMethodSerializer
