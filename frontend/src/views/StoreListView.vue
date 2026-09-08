@@ -16,8 +16,10 @@ const resultLabel = computed(() =>
   loading.value ? "Searching" : `${stores.value.length} store hits`,
 )
 
-function acceptedMethods(store) {
-  return store.payment_methods.filter((item) => item.status === "accepted")
+const statusSymbols = {
+  accepted: "〇",
+  not_accepted: "×",
+  unknown: "？",
 }
 
 async function search() {
@@ -95,9 +97,8 @@ onMounted(search)
             <span class="edit-label">Edit</span>
         </span>
         </div>
-        <div v-if="acceptedMethods(store).length" class="method-tags">
-          <span v-for="item in acceptedMethods(store).slice(0, 5)" :key="item.payment_method.id">{{ item.payment_method.name }}</span>
-          <span v-if="acceptedMethods(store).length > 5">+{{ acceptedMethods(store).length - 5 }}</span>
+        <div v-if="store.payment_methods.length" class="method-tags">
+          <span v-for="item in store.payment_methods" :key="item.payment_method.id" :class="item.status">{{ statusSymbols[item.status] }}｜{{ item.payment_method.name }}</span>
         </div>
         <p v-else class="no-methods">No accepted payment methods confirmed yet</p>
       </RouterLink>
