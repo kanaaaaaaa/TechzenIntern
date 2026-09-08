@@ -13,7 +13,7 @@ const deletingId = ref(null)
 const error = ref("")
 
 const resultLabel = computed(() =>
-  loading.value ? "Searching" : `${stores.value.length} ${stores.value.length === 1 ? "store" : "stores"}`,
+  loading.value ? "Searching" : `${stores.value.length} store hits`,
 )
 
 function acceptedMethods(store) {
@@ -53,11 +53,6 @@ onMounted(search)
 </script>
 
 <template>
-  <section class="page-heading split-heading">
-    <div><p class="eyebrow">STORE DIRECTORY</p><h1>Find stores</h1></div>
-    <RouterLink class="button primary small" to="/stores/new">＋ Add a store</RouterLink>
-  </section>
-
   <form class="search-panel" @submit.prevent="search">
     <label class="visually-hidden" for="store-search">Store name or address</label>
     <div class="search-row">
@@ -66,7 +61,7 @@ onMounted(search)
     </div>
   </form>
 
-  <div class="result-head"><span>Results</span><strong>{{ resultLabel }}</strong></div>
+  <div class="result-head"><strong>{{ resultLabel }}</strong></div>
   <p v-if="error" class="alert error">{{ error }}</p>
   <div v-if="loading" class="empty-state">Loading stores…</div>
   <div v-else-if="stores.length" class="store-grid">
@@ -122,5 +117,6 @@ onMounted(search)
   <div v-else class="empty-state">
     <h2>No stores match your search</h2>
     <p>Try different keywords, or add a new store.</p>
+    <RouterLink class="button secondary" to="/stores/new">Add a new store</RouterLink>
   </div>
 </template>
