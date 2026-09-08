@@ -54,6 +54,15 @@ export const deleteStore = (id) =>
 export const submitStoreFeedback = (id, vote) =>
   api.post(`/stores/${id}/feedback/`, { vote }).then((response) => response.data)
 
+export const listStoreComments = (id) =>
+  api.get(`/stores/${id}/comments/`).then((response) => response.data)
+
+export const createStoreComment = (id, text) =>
+  api.post(`/stores/${id}/comments/`, { text }).then((response) => response.data)
+
+export const updateStoreComment = (id, text) =>
+  api.patch(`/stores/${id}/comments/`, { text }).then((response) => response.data)
+
 export const listPaymentMethods = () =>
   api.get("/payment-methods/").then((response) => response.data)
 

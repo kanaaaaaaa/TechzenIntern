@@ -8,8 +8,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .access import issue_token, password_matches
-from .models import PaymentMethod, Store, StoreFeedback, StorePaymentMethod
-from .serializers import PaymentMethodSerializer, StoreSerializer
+from .models import PaymentMethod, Store, StoreComment, StoreFeedback, StorePaymentMethod
+from .serializers import PaymentMethodSerializer, StoreCommentSerializer, StoreSerializer
 from rest_framework.decorators import action
 
 User = get_user_model()
@@ -135,6 +135,71 @@ class StoreViewSet(viewsets.ModelViewSet):
             ).count(),
             "my_feedback": current_vote,
         })
+
+    @action(detail=True, methods=["get", "post", "patch"])
+    def comments(self, request, pk=None):
+        store = self.get_object()
+
+        if request.method == "GET":
+            comments = StoreComment.objects.filter(
+                store=store
+            ).select_related("user")
+
+            serializer = StoreCommentSerializer(
+                comments,
+                many=True,
+                context={"request": request},
+            )
+            return Response(serializer.data)
+
+        if request.method == "POST":
+            if StoreComment.objects.filter(
+                store=store,
+                user=request.user,
+            ).exists():
+                raise ValidationError({
+                    "text": ["You can only post one comment per store."]
+                })
+
+            serializer = StoreCommentSerializer(
+                data=request.data,
+                context={"request": request},
+            )
+            serializer.is_valid(raise_exception=True)
+
+            comment = serializer.save(
+                store=store,
+                user=request.user,
+            )
+
+            return Response(
+                StoreCommentSerializer(
+                    comment,
+                    context={"request": request},
+                ).data,
+                status=status.HTTP_201_CREATED,
+            )
+
+        try:
+            comment = StoreComment.objects.get(
+                store=store,
+                user=request.user,
+            )
+        except StoreComment.DoesNotExist:
+            raise ValidationError({
+                "text": ["You have not posted a comment yet."]
+            })
+
+        serializer = StoreCommentSerializer(
+            comment,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
 
 class PaymentMethodViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PaymentMethodSerializer

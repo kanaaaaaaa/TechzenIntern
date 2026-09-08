@@ -98,6 +98,30 @@ class StoreFeedback(models.Model):
             ),
         ]
 
+class StoreComment(models.Model):
+    store = models.ForeignKey(
+        Store,
+        related_name="comments",
+        on_delete=models.CASCADE,
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="store_comments",
+        on_delete=models.CASCADE,
+    )
+    text = models.TextField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["store", "user"],
+                name="unique_store_comment_user",
+            ),
+        ]
+
 class PaymentMethod(models.Model):
     class Category(models.TextChoices):
         CASH = "cash", "Cash"
