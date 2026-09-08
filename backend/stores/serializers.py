@@ -141,3 +141,14 @@ class StoreSerializer(serializers.ModelSerializer):
         if statuses is not None:
             self._save_statuses(instance, statuses)
         return instance
+
+    #以下変更点
+    created_by = serializers.StringRelatedField(read_only=True)
+    
+    class Meta:
+        model = Store
+        fields = [
+            # ... 既存フィールド ...
+            "created_by",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at", "created_by"]
