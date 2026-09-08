@@ -87,6 +87,10 @@ class AppAccessView(APIView):
         return Response({"token": issue_token()})
 
 
+#以下ポイント用の変更あり
+from django.db import transaction
+from .models import Store, UserPoints, PointHistory
+
 class StoreViewSet(viewsets.ModelViewSet):
     serializer_class = StoreSerializer
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -135,6 +139,44 @@ class StoreViewSet(viewsets.ModelViewSet):
             ).count(),
             "my_feedback": current_vote,
         })
+
+    #以下変更点
+    permission_classes = [IsAuthenticated]  # 認証必須に変更
+
+    def perform_create(self, serializer):
+        """新店舗作成時に +3 ポイント"""
+        with transaction.atomic():
+            store = serializer.save(created_by=self.request.user)
+            self._award_points(
+                user=self.request.user,
+                store=store,
+                action_type=PointHistory.ActionType.CREATE_STORE,
+                points=3
+            )
+    
+    def perform_update(self, serializer):
+        """店舗編集時に +1 ポイント"""
+        with transaction.atomic():
+            store = serializer.save()
+            self._award_points(
+                user=self.request.user,
+                store=store,
+                action_type=PointHistory.ActionType.EDIT_STORE,
+                points=1
+            )
+    
+    def _award_points(self, user, store, action_type, points):
+        """ポイント付与の共通処理"""
+        user_points, _ = UserPoints.objects.get_or_create(user=user)
+        user_points.points += points
+        user_points.save(update_fields=["points", "updated_at"])
+        
+        PointHistory.objects.create(
+            user=user,
+            store=store,
+            action_type=action_type,
+            points=points
+        )
 
 class PaymentMethodViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PaymentMethodSerializer
