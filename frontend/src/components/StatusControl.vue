@@ -6,9 +6,9 @@ defineProps({
 defineEmits(["update:modelValue"])
 
 const options = [
-  { value: "accepted", label: "Accepted" },
-  { value: "not_accepted", label: "Not accepted" },
-  { value: "unknown", label: "Unknown" },
+  { value: "accepted", label: "⚪︎" },
+  { value: "not accepted", label: "×" },
+  { value: "unknown", label: "？" },
 ]
 </script>
 
