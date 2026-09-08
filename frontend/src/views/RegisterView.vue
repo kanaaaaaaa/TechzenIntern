@@ -1,11 +1,10 @@
 <script setup>
 import { ref } from "vue"
-import { RouterLink, useRoute, useRouter } from "vue-router"
+import { RouterLink, useRouter } from "vue-router"
 
-import { apiErrorMessage, login } from "../api"
+import { apiErrorMessage, register } from "../api"
 import { clearToken, setToken } from "../auth"
 
-const route = useRoute()
 const router = useRouter()
 
 const username = ref("")
@@ -18,9 +17,9 @@ async function submit() {
 
   try {
     clearToken()
-    const data = await login(username.value)
+    const data = await register(username.value)
     setToken(data.token)
-    await router.replace(String(route.query.next || "/"))
+    await router.replace("/")
   } catch (err) {
     error.value = apiErrorMessage(err)
   } finally {
@@ -31,8 +30,8 @@ async function submit() {
 
 <template>
   <section class="login-panel">
-    <p class="eyebrow">LOGIN</p>
-    <h1>Login</h1>
+    <p class="eyebrow">REGISTER</p>
+    <h1>Create account</h1>
 
     <form @submit.prevent="submit">
       <label for="username">Username</label>
@@ -51,13 +50,13 @@ async function submit() {
         type="submit"
         :disabled="checking || !username"
       >
-        {{ checking ? "Logging in…" : "Login" }}
+        {{ checking ? "Creating…" : "Create account" }}
       </button>
     </form>
 
     <p>
-      Don't have an account?
-      <RouterLink to="/register">Create account</RouterLink>
+      Already have an account?
+      <RouterLink to="/login">Login</RouterLink>
     </p>
   </section>
 </template>

@@ -1,7 +1,9 @@
+from django.contrib.auth import get_user_model
 from django.db.models import Prefetch
-from rest_framework import filters, viewsets
+from rest_framework import filters, status, viewsets
+from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -9,7 +11,67 @@ from .access import issue_token, password_matches
 from .models import PaymentMethod, Store, StorePaymentMethod
 from .serializers import PaymentMethodSerializer, StoreSerializer
 
+User = get_user_model()
 
+class RegisterView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = str(request.data.get("username") or "").strip()
+
+        if not username:
+            raise ValidationError({"username": ["Username is required."]})
+
+        if User.objects.filter(username=username).exists():
+            raise ValidationError(
+                {"username": ["This username is already in use."]}
+            )
+
+        user = User.objects.create_user(username=username)
+        token = Token.objects.create(user=user)
+
+        return Response(
+            {
+                "token": token.key,
+                "username": user.username,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = str(request.data.get("username") or "").strip()
+
+        if not username:
+            raise ValidationError({"username": ["Username is required."]})
+
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            raise ValidationError(
+                {"username": ["This username does not exist."]}
+            )
+
+        token, _ = Token.objects.get_or_create(user=user)
+
+        return Response(
+            {
+                "token": token.key,
+                "username": user.username,
+            }
+        )
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        request.auth.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
 class AppAccessView(APIView):
     """Exchanges the shared app password for the token the app sends back."""
 
