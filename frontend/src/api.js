@@ -54,6 +54,14 @@ export const deleteStore = (id) =>
 export const listPaymentMethods = () =>
   api.get("/payment-methods/").then((response) => response.data)
 
+export const ocrImage = (imageFile) => {
+  const formData = new FormData()
+  formData.append("image", imageFile)
+  return api
+    .post("/ocr/", formData, { headers: { "Content-Type": "multipart/form-data" } })
+    .then((response) => response.data)
+}
+
 export function apiErrorMessage(error) {
   if (!error.response) return "Cannot reach the API. Check that the Django server is running."
   const data = error.response.data

@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from .ocr import OcrView
 from .views import (
     AppAccessView,
     LoginView,
@@ -18,4 +19,5 @@ urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
+    path("ocr/", OcrView.as_view(), name="ocr"),
 ] + router.urls

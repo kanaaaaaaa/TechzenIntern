@@ -29,6 +29,11 @@ services:
       # rotate it (note: tokens already handed out stay valid, see README).
       - key: APP_PASSWORD
         sync: false
+      # Contents of a GCP service account key JSON (Cloud Vision API access
+      # for the receipt-scan OCR feature). Paste the whole JSON file's text
+      # in as the value. Leave unset to disable OCR.
+      - key: GOOGLE_APPLICATION_CREDENTIALS_JSON
+        sync: false
       # Guesses allowed per client IP against that one password.
       - key: APP_ACCESS_THROTTLE_RATE
         value: 10/hour
