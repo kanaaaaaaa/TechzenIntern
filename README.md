@@ -267,6 +267,58 @@ Two things to keep in mind.
   two workers, an attacker gets roughly twice the stated rate. Give the app a real random
   password rather than relying on the cap alone.
 
+## Google Cloud (Compute Engine)
+
+An alternative to Render: one Compute Engine VM runs both the app container (built from
+the same `Dockerfile`) and a PostgreSQL container, wired together by `docker-compose.yml`.
+Unlike the SQLite setup above, the database here persists across deploys and restarts in
+a named Docker volume.
+
+Prerequisites: the [gcloud CLI](https://cloud.google.com/sdk/docs/install), authenticated
+(`gcloud auth login`) with a project selected (`gcloud config set project <PROJECT_ID>`).
+
+### First-time setup
+
+```bash
+PROJECT_ID=your-project ./deploy/gcp/create-instance.sh
+```
+
+This opens TCP:80 and creates a Debian VM whose startup-script installs Docker. Then, once
+the instance is up:
+
+```bash
+PROJECT_ID=your-project gcloud compute ssh paymethodfinder -- \
+  'sudo mkdir -p /opt/paymethodfinder'
+PROJECT_ID=your-project gcloud compute scp .env.gcp.example \
+  paymethodfinder:/tmp/.env.gcp
+PROJECT_ID=your-project gcloud compute ssh paymethodfinder -- \
+  'sudo mv /tmp/.env.gcp /opt/paymethodfinder/.env.gcp'
+```
+
+SSH in and edit `/opt/paymethodfinder/.env.gcp` (`sudo nano ...`) with real values —
+see the comments in `.env.gcp.example` for what each variable does. It is never
+committed to the repository and `deploy.sh` never overwrites it.
+
+Then ship the code and bring the app up for the first time:
+
+```bash
+PROJECT_ID=your-project ./deploy/gcp/deploy.sh
+```
+
+The app is now reachable at the VM's external IP on port 80.
+
+### Subsequent deploys
+
+```bash
+PROJECT_ID=your-project ./deploy/gcp/deploy.sh
+```
+
+This syncs the current code to the VM and runs `docker compose up -d --build`. The
+`postgres_data` volume is untouched, so store data survives.
+
+Out of scope for now: Cloud SQL, HTTPS/TLS termination and CI/CD — the VM serves plain
+HTTP on port 80 only.
+
 ## Current MVP scope
 
 - Search by store name and address
