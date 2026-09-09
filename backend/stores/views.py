@@ -315,6 +315,20 @@ class StoreViewSet(viewsets.ModelViewSet):
             annotated_comment_count=Count("comments", distinct=True),
         )
 
+        # Filter by payment methods (AND logic - store must have ALL selected methods with the given status)
+        payment_methods_param = self.request.query_params.get("payment_methods")
+        payment_method_status = self.request.query_params.get("payment_method_status")
+
+        if payment_methods_param:
+            method_ids = [int(id_str) for id_str in payment_methods_param.split(",") if id_str.isdigit()]
+            if method_ids:
+                filter_status = payment_method_status or "accepted"
+                for method_id in method_ids:
+                    queryset = queryset.filter(
+                        payment_methods__payment_method_id=method_id,
+                        payment_methods__status=filter_status
+                    )
+
         user = self.request.user
         if user.is_authenticated:
             queryset = queryset.prefetch_related(
