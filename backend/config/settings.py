@@ -4,6 +4,7 @@ from pathlib import Path
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 
 def env_list(name, default):
@@ -11,6 +12,10 @@ def env_list(name, default):
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# A real environment variable always wins; .env only fills in what's missing,
+# so nothing changes for setups (Render, CI) that already export these.
+load_dotenv(BASE_DIR / ".env")
 FRONTEND_DIST = BASE_DIR.parent / "frontend" / "dist"
 
 # Production is the default. A forgotten DJANGO_DEBUG must not open the app up,
