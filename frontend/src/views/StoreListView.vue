@@ -11,6 +11,7 @@ import {
   submitStoreFeedback,
   updateStoreComment,
 } from "../api"
+import { isUnlocked } from "../auth"
 
 const route = useRoute()
 const router = useRouter()
@@ -21,6 +22,7 @@ const loading = ref(true)
 const deletingId = ref(null)
 const votingId = ref(null)
 
+const openVotePrompt = ref(null)
 const openCommentId = ref(null)
 const loadingCommentsId = ref(null)
 const postingCommentId = ref(null)
@@ -63,7 +65,22 @@ async function search() {
   }
 }
 
+function requireLogin() {
+  router.push({ name: "login", query: { next: route.fullPath } })
+}
+
 async function vote(store, voteType) {
+  if (!isUnlocked()) {
+    const isSameButton =
+      openVotePrompt.value?.storeId === store.id &&
+      openVotePrompt.value?.voteType === voteType
+
+    openVotePrompt.value = isSameButton
+      ? null
+      : { storeId: store.id, voteType }
+    return
+  }
+
   const nextVote =
     store.my_feedback === voteType ? null : voteType
 
@@ -112,6 +129,11 @@ async function toggleComments(store) {
 }
 
 async function postComment(store) {
+  if (!isUnlocked()) {
+    requireLogin()
+    return
+  }
+
   const text = String(
     commentDrafts.value[store.id] || "",
   ).trim()
@@ -422,13 +444,29 @@ onMounted(search)
           </div>
         </div>
 
+        <!-- Vote login prompt -->
+        <div
+          v-if="openVotePrompt?.storeId === store.id"
+          class="store-comments"
+        >
+          <p class="comment-login-prompt">
+            <RouterLink :to="{ name: 'login', query: { next: route.fullPath } }">Login</RouterLink>
+            to vote.
+          </p>
+        </div>
+
         <!-- Comment area -->
         <div
           v-if="openCommentId === store.id"
           class="store-comments"
         >
+          <p v-if="!isUnlocked()" class="comment-login-prompt">
+            <RouterLink :to="{ name: 'login', query: { next: route.fullPath } }">Login</RouterLink>
+            to post a comment.
+          </p>
+
           <form
-            v-if="
+            v-else-if="
               loadingCommentsId !== store.id &&
               !commentsByStore[store.id]?.some(comment => comment.is_mine)
             "

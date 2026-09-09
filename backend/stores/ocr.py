@@ -5,6 +5,7 @@ from django.core.exceptions import ImproperlyConfigured
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -39,6 +40,7 @@ def _vision_credentials():
 class OcrView(APIView):
     """Runs Cloud Vision OCR on an uploaded photo and returns the extracted text."""
 
+    permission_classes = [AllowAny]
     parser_classes = [MultiPartParser]
 
     def post(self, request):
