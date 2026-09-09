@@ -154,7 +154,8 @@ input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(23, 107, 77
 
 @media (max-width: 800px) {
   .site-header { padding: 0 20px; }
-  .site-header nav > a:first-child { display: none; }
+  .site-header nav {gap: 14px;}
+  .site-header .nav-primary {display: none;}
   .page-shell, .site-footer { width: min(100% - 32px, 1160px); }
   .hero { padding: 18px 0 70px; }
   .finder-card { width: min(100% - 20px, 450px); }
