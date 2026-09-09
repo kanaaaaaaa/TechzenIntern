@@ -368,3 +368,57 @@ input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(23, 107, 77
   gap: 8px;
   margin-top: 8px;
 }
+
+.account-button {
+  text-decoration: none;
+}
+
+.account-panel {
+  width: min(100%, 520px);
+  margin: 0 auto;
+  padding: 72px 0;
+}
+
+.account-panel h1 {
+  margin: 0 0 32px;
+  font-size: 36px;
+}
+
+.account-details {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.account-details div {
+  padding: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.account-details div:last-child {
+  border-bottom: 0;
+}
+
+.account-details dt {
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.account-details dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.account-logout-button {
+  width: 100%;
+  margin-top: 20px;
+  background: transparent;
+  color: var(--red);
+  border-color: var(--red);
+}
