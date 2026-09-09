@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from "vue"
+import { computed, onMounted, provide, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 import { clearToken } from "./auth"
@@ -18,14 +18,18 @@ const showMainNav = computed(
 
 const userPoints = ref(null)
 
-onMounted(async () => {
+async function refreshUserPoints() {
   try {
     const data = await getUserPoints()
     userPoints.value = data.total_points
   } catch {
     userPoints.value = null
   }
-})
+}
+
+onMounted(refreshUserPoints)
+
+provide("refreshUserPoints", refreshUserPoints)
 
 function logout() {
   clearToken()
