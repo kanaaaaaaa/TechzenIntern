@@ -1,8 +1,9 @@
 <script setup>
-import { computed } from "vue"
+import { computed, onMounted, provide, ref } from "vue"
 import { useRoute } from "vue-router"
 
-import { isUnlocked } from "./auth"
+import { clearToken, getToken } from "./auth"
+import { getUserPoints } from "./api"
 
 const route = useRoute()
 
@@ -13,6 +14,30 @@ const showHeaderActions = computed(
 const showMainNav = computed(
   () => route.name !== "home" && route.name !== "store-new" && route.name !== "stores"
 )
+
+const userPoints = ref(null)
+
+async function refreshUserPoints() {
+  if (!getToken()) {
+    userPoints.value = null
+    return
+  }
+  try {
+    const data = await getUserPoints()
+    userPoints.value = data.total_points
+  } catch {
+    userPoints.value = null
+  }
+}
+
+onMounted(refreshUserPoints)
+
+provide("refreshUserPoints", refreshUserPoints)
+
+function logout() {
+  clearToken()
+  userPoints.value = null
+}
 </script>
 
 <template>
@@ -32,8 +57,12 @@ const showMainNav = computed(
           </RouterLink>
         </template>
 
+        <span v-if="userPoints !== null" class="points-badge" title="Your points">
+          <strong>{{ userPoints }}</strong>p
+        </span>
+
         <RouterLink
-          v-if="isUnlocked()"
+          v-if="getToken()"
           class="account-button"
           to="/account"
           aria-label="Account"
@@ -69,3 +98,20 @@ const showMainNav = computed(
     </footer>
   </div>
 </template>
+
+<style scoped>
+.points-badge {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  background: var(--green);
+  color: white;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.points-badge strong {
+  font-size: 14px;
+}
+</style>

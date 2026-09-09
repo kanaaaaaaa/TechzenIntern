@@ -39,6 +39,9 @@ export const logout = () =>
 export const getAccount = () =>
   api.get("/auth/me/").then((response) => response.data)
 
+export const getUserPoints = () =>
+  api.get("/user/points/").then((response) => response.data)
+
 export const listStores = (params = {}) =>
   api.get("/stores/", { params }).then((response) => response.data)
 
