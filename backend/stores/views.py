@@ -94,6 +94,15 @@ class StoreViewSet(viewsets.ModelViewSet):
     ordering_fields = ["name", "latitude", "longitude", "updated_at", "created_at"]
     ordering = ["name", "id"]
 
+    def get_permissions(self):
+        # Searching, viewing, and adding store info stay open to everyone.
+        # Voting Good/Bad and posting/editing comments require an account.
+        if self.action == "feedback":
+            return [IsAuthenticated()]
+        if self.action == "comments" and self.request.method in ("POST", "PATCH"):
+            return [IsAuthenticated()]
+        return [AllowAny()]
+
     def get_queryset(self):
         statuses = StorePaymentMethod.objects.select_related("payment_method")
         return Store.objects.prefetch_related(Prefetch("payment_methods", queryset=statuses))
@@ -202,6 +211,7 @@ class StoreViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 class PaymentMethodViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [AllowAny]
     serializer_class = PaymentMethodSerializer
     pagination_class = None
 

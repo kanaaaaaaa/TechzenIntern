@@ -2,7 +2,7 @@
 import { computed } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
-import { clearToken } from "./auth"
+import { clearToken, isUnlocked } from "./auth"
 
 const route = useRoute()
 const router = useRouter()
@@ -38,10 +38,11 @@ function logout() {
         </template>
 
         <button
+          v-if="isUnlocked()"
           class="account-button"
           type="button"
-          aria-label="Account"
-          title="Account"
+          aria-label="Logout"
+          title="Logout"
           @click="logout"
         >
           <svg
@@ -56,6 +57,7 @@ function logout() {
             <path d="M4 21a8 8 0 0 1 16 0" />
           </svg>
         </button>
+        <RouterLink v-else to="/login">Login</RouterLink>
       </nav>
     </header>
 
