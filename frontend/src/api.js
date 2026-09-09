@@ -57,6 +57,9 @@ export const submitStoreFeedback = (id, vote) =>
 export const listPaymentMethods = () =>
   api.get("/payment-methods/").then((response) => response.data)
 
+export const getUserPoints = () =>
+  api.get("/user/points/").then((response) => response.data)
+
 export function apiErrorMessage(error) {
   if (!error.response) return "Cannot reach the API. Check that the Django server is running."
   const data = error.response.data

@@ -2,7 +2,7 @@
 import { onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
 
-import { listStores } from "../api"
+import { listStores, getUserPoints } from "../api"
 
 const router = useRouter()
 const query = ref("")
@@ -21,7 +21,7 @@ onMounted(async () => {
   // ポイント情報の取得を追加
   try {
     const data = await getUserPoints()
-    userPoints.value = data.points // バックエンドのレスポンス構造に合わせて調整（例: data.points など）
+    userPoints.value = data.total_points
   } catch {
     userPoints.value = null
   }
@@ -48,6 +48,7 @@ function search() {
         <RouterLink class="button secondary" to="/stores/new">Add a new store</RouterLink>
       </div>
       <p v-if="storeCount !== null" class="record-count"><strong>{{ storeCount }}</strong> stores listed</p>
+      <p v-if="userPoints !== null" class="user-points"><strong>{{ userPoints }}</strong>p</p>
     </div>
   </section>
 </template>
