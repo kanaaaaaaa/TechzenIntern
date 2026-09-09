@@ -1,8 +1,9 @@
 <script setup>
-import { computed } from "vue"
+import { computed, onMounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 import { clearToken } from "./auth"
+import { getUserPoints } from "./api"
 
 const route = useRoute()
 const router = useRouter()
@@ -14,6 +15,17 @@ const showHeaderActions = computed(
 const showMainNav = computed(
   () => route.name !== "home" && route.name !== "store-new" && route.name !== "stores"
 )
+
+const userPoints = ref(null)
+
+onMounted(async () => {
+  try {
+    const data = await getUserPoints()
+    userPoints.value = data.total_points
+  } catch {
+    userPoints.value = null
+  }
+})
 
 function logout() {
   clearToken()
@@ -36,6 +48,10 @@ function logout() {
             Add a store
           </RouterLink>
         </template>
+
+        <span v-if="userPoints !== null" class="points-badge" title="Your points">
+          <strong>{{ userPoints }}</strong>p
+        </span>
 
         <button
           class="account-button"
