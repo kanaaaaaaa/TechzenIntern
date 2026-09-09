@@ -2,7 +2,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import PaymentMethod, Store, StoreComment, StoreFeedback, StorePaymentMethod
+from .models import PaymentMethod, Store, StoreComment, StoreFeedback, StorePaymentMethod, UserPoints
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
     category_label = serializers.CharField(source="get_category_display", read_only=True)
@@ -157,6 +157,13 @@ class StoreSerializer(serializers.ModelSerializer):
                 },
             )
 
+    def _award_points(self, points_to_add):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            user_points, _ = UserPoints.objects.get_or_create(user=request.user)
+            user_points.total_points += points_to_add
+            user_points.save(update_fields=["total_points", "updated_at"])
+
     @transaction.atomic
     def create(self, validated_data):
         statuses = validated_data.pop("payment_statuses", [])
@@ -168,6 +175,7 @@ class StoreSerializer(serializers.ModelSerializer):
             if method.id not in supplied
         ])
         self._save_statuses(store, statuses)
+        self._award_points(3)
         return store
 
     @transaction.atomic
@@ -176,4 +184,5 @@ class StoreSerializer(serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
         if statuses is not None:
             self._save_statuses(instance, statuses)
+        self._award_points(1)
         return instance

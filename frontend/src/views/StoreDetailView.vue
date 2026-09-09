@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue"
+import { computed, inject, onMounted, reactive, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 import PaymentMethodEditor from "../components/PaymentMethodEditor.vue"
@@ -8,6 +8,7 @@ import { apiErrorMessage, getStore, listPaymentMethods, updateStore } from "../a
 const props = defineProps({ id: { type: String, required: true } })
 const route = useRoute()
 const router = useRouter()
+const refreshUserPoints = inject("refreshUserPoints")
 const store = ref(null)
 const methods = ref([])
 const statuses = reactive({})
@@ -63,6 +64,7 @@ async function save() {
       longitude: optionalCoordinate(form.longitude),
       payment_statuses: methods.value.map((method) => ({ payment_method_id: method.id, status: statuses[method.id] })),
     })
+    refreshUserPoints?.()
     await router.push(listRoute.value)
   } catch (err) {
     error.value = apiErrorMessage(err)
