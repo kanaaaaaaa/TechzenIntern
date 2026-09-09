@@ -36,6 +36,9 @@ export const login = (username) =>
 export const logout = () =>
   api.post("/auth/logout/")
 
+export const getAccount = () =>
+  api.get("/auth/me/").then((response) => response.data)
+
 export const listStores = (params = {}) =>
   api.get("/stores/", { params }).then((response) => response.data)
 

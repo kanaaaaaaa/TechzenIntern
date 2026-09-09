@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .ocr import OcrView
 from .views import (
+    AccountView,
     AppAccessView,
     LoginView,
     LogoutView,
@@ -19,5 +20,6 @@ urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
+    path("auth/me/", AccountView.as_view(), name="account"),
     path("ocr/", OcrView.as_view(), name="ocr"),
 ] + router.urls

@@ -72,7 +72,18 @@ class LogoutView(APIView):
     def post(self, request):
         request.auth.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
+
+class AccountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({
+            "username": request.user.username,
+            "date_joined": request.user.date_joined,
+        })
+
+
 class AppAccessView(APIView):
     """Exchanges the shared app password for the token the app sends back."""
 
@@ -209,6 +220,7 @@ class StoreViewSet(viewsets.ModelViewSet):
         serializer.save()
 
         return Response(serializer.data)
+
 
 class PaymentMethodViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]

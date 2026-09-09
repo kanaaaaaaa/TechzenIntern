@@ -1,11 +1,10 @@
 <script setup>
 import { computed } from "vue"
-import { useRoute, useRouter } from "vue-router"
+import { useRoute } from "vue-router"
 
-import { clearToken, isUnlocked } from "./auth"
+import { isUnlocked } from "./auth"
 
 const route = useRoute()
-const router = useRouter()
 
 const showHeaderActions = computed(
   () => route.name !== "login" && route.name !== "register"
@@ -14,11 +13,6 @@ const showHeaderActions = computed(
 const showMainNav = computed(
   () => route.name !== "home" && route.name !== "store-new" && route.name !== "stores"
 )
-
-function logout() {
-  clearToken()
-  router.push({ name: "login" })
-}
 </script>
 
 <template>
@@ -32,18 +26,18 @@ function logout() {
       <nav v-if="showHeaderActions" aria-label="Main navigation">
         <template v-if="showMainNav">
           <RouterLink to="/stores">Find stores</RouterLink>
+
           <RouterLink class="nav-primary" to="/stores/new">
             Add a store
           </RouterLink>
         </template>
 
-        <button
+        <RouterLink
           v-if="isUnlocked()"
           class="account-button"
-          type="button"
-          aria-label="Logout"
-          title="Logout"
-          @click="logout"
+          to="/account"
+          aria-label="Account"
+          title="Account"
         >
           <svg
             viewBox="0 0 24 24"
@@ -56,8 +50,11 @@ function logout() {
             <circle cx="12" cy="8" r="4" />
             <path d="M4 21a8 8 0 0 1 16 0" />
           </svg>
-        </button>
-        <RouterLink v-else to="/login">Login</RouterLink>
+        </RouterLink>
+
+        <RouterLink v-else to="/login">
+          Login
+        </RouterLink>
       </nav>
     </header>
 
