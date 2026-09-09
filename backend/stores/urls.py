@@ -1,9 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from django.urls import path
 from . import views
-
 from .views import (
     AppAccessView,
     LoginView,
@@ -21,5 +19,6 @@ urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
-    path('api/user/points/', views.user_points, name='user-points'),
+    path("access/", AppAccessView.as_view(), name="app-access"),
+    path("user/points/", views.user_points, name="user-points"),
 ] + router.urls

@@ -134,21 +134,16 @@ APP_PASSWORD = env_secret("APP_PASSWORD", "development-only-password")
 APP_ACCESS_MAX_AGE = int(os.environ.get("APP_ACCESS_MAX_AGE", 60 * 60 * 24 * 30))
 
 REST_FRAMEWORK = {
-    # Everything needs the app password; the token is issued by /api/access/.
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.TokenAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "stores.access.AppAccessAuthentication",
+    ],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
-    # One password guards the whole app, so it is one target worth guessing at.
-    # Only /api/access/ carries this scope; the rest of the API is unthrottled.
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
     "DEFAULT_THROTTLE_RATES": {
         "app-access": os.environ.get("APP_ACCESS_THROTTLE_RATE", "10/hour"),
     },
-    # Throttling counts per client IP. Render terminates TLS on one proxy in
-    # front of this service, so the last X-Forwarded-For entry is the real
-    # client. Left unset, DRF keys off the whole header, which a client can
-    # forge to hand itself a fresh bucket on every request. Set 0 when nothing
-    # proxies this service.
     "NUM_PROXIES": int(os.environ.get("DJANGO_NUM_PROXIES", "1")),
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }

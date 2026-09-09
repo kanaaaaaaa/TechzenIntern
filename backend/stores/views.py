@@ -1,44 +1,41 @@
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Prefetch
 from rest_framework import filters, status, viewsets
 from rest_framework.authtoken.models import Token
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .access import issue_token, password_matches
-from .models import PaymentMethod, Store, StoreFeedback, StorePaymentMethod
+from .access import issue_token, password_matches, IsAuthenticatedOrHasAppAccess
+from .models import PaymentMethod, Store, StoreFeedback, StorePaymentMethod, UserPoints, PointHistory
 from .serializers import PaymentMethodSerializer, StoreSerializer
-from rest_framework.decorators import action
 
-#以下変更点（場所ここであってる？）
-from django.db import transaction
-from .models import Store, UserPoints, PointHistory
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
+User = get_user_model()
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def user_points(request):
     """ログイン中のユーザーのポイント情報を取得"""
     user_points, _ = UserPoints.objects.get_or_create(user=request.user)
-    history = PointHistory.objects.filter(user=request.user).order_by('-created_at')[:10]
-    
+    history = PointHistory.objects.filter(user=request.user).order_by("-created_at")[:10]
+
     return Response({
-        'total_points': user_points.points,
-        'recent_history': [
+        "total_points": user_points.points,
+        "recent_history": [
             {
-                'action': item.get_action_type_display(),
-                'points': item.points,
-                'store_name': item.store.name,
-                'created_at': item.created_at,
+                "action": item.get_action_type_display(),
+                "points": item.points,
+                "store_name": item.store.name,
+                "created_at": item.created_at,
             }
             for item in history
-        ]
+        ],
     })
 
-User = get_user_model()
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -98,13 +95,12 @@ class LogoutView(APIView):
     def post(self, request):
         request.auth.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
+
 class AppAccessView(APIView):
     """Exchanges the shared app password for the token the app sends back."""
 
     permission_classes = [AllowAny]
-    # The only endpoint that can be guessed at, and there is a single password
-    # for everyone to guess, so cap the attempts. Rate: DEFAULT_THROTTLE_RATES.
     throttle_scope = "app-access"
 
     def post(self, request):
@@ -119,6 +115,7 @@ class StoreViewSet(viewsets.ModelViewSet):
     search_fields = ["name", "normalized_name", "address"]
     ordering_fields = ["name", "latitude", "longitude", "updated_at", "created_at"]
     ordering = ["name", "id"]
+    permission_classes = [IsAuthenticatedOrHasAppAccess]
 
     def get_queryset(self):
         statuses = StorePaymentMethod.objects.select_related("payment_method")
@@ -162,20 +159,20 @@ class StoreViewSet(viewsets.ModelViewSet):
             "my_feedback": current_vote,
         })
 
-    #以下変更点
-    permission_classes = [IsAuthenticated]  # 認証必須に変更
-    
     def perform_create(self, serializer):
         """新店舗作成時に +3 ポイント"""
         with transaction.atomic():
-            store = serializer.save(created_by=self.request.user)
+            extra = {}
+            if self.request.user.is_authenticated:
+                extra["created_by"] = self.request.user
+            store = serializer.save(**extra)
             self._award_points(
                 user=self.request.user,
                 store=store,
                 action_type=PointHistory.ActionType.CREATE_STORE,
-                points=3
+                points=3,
             )
-    
+
     def perform_update(self, serializer):
         """店舗編集時に +1 ポイント"""
         with transaction.atomic():
@@ -184,20 +181,22 @@ class StoreViewSet(viewsets.ModelViewSet):
                 user=self.request.user,
                 store=store,
                 action_type=PointHistory.ActionType.EDIT_STORE,
-                points=1
+                points=1,
             )
-    
+
     def _award_points(self, user, store, action_type, points):
         """ポイント付与の共通処理"""
+        if not user.is_authenticated:
+            return
         user_points, _ = UserPoints.objects.get_or_create(user=user)
         user_points.points += points
         user_points.save(update_fields=["points", "updated_at"])
-        
+
         PointHistory.objects.create(
             user=user,
             store=store,
             action_type=action_type,
-            points=points
+            points=points,
         )
 
 

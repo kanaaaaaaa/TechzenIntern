@@ -33,6 +33,7 @@ provide("refreshUserPoints", refreshUserPoints)
 
 function logout() {
   clearToken()
+  userPoints.value = null
   router.push({ name: "login" })
 }
 </script>

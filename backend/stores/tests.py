@@ -251,7 +251,7 @@ class AppAccessTests(APITestCase):
     def test_requests_without_a_token_are_refused(self):
         response = self.client.get(reverse("store-list"))
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_wrong_password_is_refused(self):
         response = self.client.post(reverse("app-access"), {"password": "not-the-password"})
@@ -269,7 +269,7 @@ class AppAccessTests(APITestCase):
     def test_a_made_up_token_is_refused(self):
         self.client.credentials(HTTP_AUTHORIZATION="Bearer made.up.token")
 
-        self.assertEqual(self.client.get(reverse("store-list")).status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(self.client.get(reverse("store-list")).status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class AppAccessThrottleTests(APITestCase):
