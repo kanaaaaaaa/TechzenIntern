@@ -1,6 +1,21 @@
 from django.contrib import admin
 
-from .models import PaymentMethod, Store, StorePaymentMethod
+from .models import PaymentMethod, Store, StorePaymentMethod, UserPoints, PointHistory
+
+
+@admin.register(UserPoints)
+class UserPointsAdmin(admin.ModelAdmin):
+    list_display = ['user', 'points', 'updated_at']
+    search_fields = ['user__username']
+    readonly_fields = ['user', 'created_at', 'updated_at']
+
+
+@admin.register(PointHistory)
+class PointHistoryAdmin(admin.ModelAdmin):
+    list_display = ['user', 'action_type', 'points', 'store', 'created_at']
+    list_filter = ['action_type', 'created_at']
+    search_fields = ['user__username', 'store__name']
+    readonly_fields = ['user', 'store', 'action_type', 'points', 'created_at']
 
 
 class StorePaymentMethodInline(admin.TabularInline):

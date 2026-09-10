@@ -4,6 +4,9 @@ import { RouterLink, useRoute, useRouter } from "vue-router"
 
 import { apiErrorMessage, login } from "../api"
 import { clearToken, setToken } from "../auth"
+import { inject } from "vue"
+
+const refreshUserPoints = inject("refreshUserPoints")
 
 const route = useRoute()
 const router = useRouter()
@@ -20,6 +23,7 @@ async function submit() {
     clearToken()
     const data = await login(username.value)
     setToken(data.token)
+    if (refreshUserPoints) await refreshUserPoints()
     await router.replace(String(route.query.next || "/"))
   } catch (err) {
     error.value = apiErrorMessage(err)

@@ -65,6 +65,7 @@ class StoreSerializer(serializers.ModelSerializer):
     not_helpful_count = serializers.SerializerMethodField()
     my_feedback = serializers.SerializerMethodField()
     comment_count = serializers.SerializerMethodField()
+    created_by = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Store
@@ -80,10 +81,11 @@ class StoreSerializer(serializers.ModelSerializer):
             "not_helpful_count",
             "my_feedback",
             "comment_count",
+            "created_by",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at", "created_by"]
 
     def get_helpful_count(self, obj):
         return obj.feedback_votes.filter(

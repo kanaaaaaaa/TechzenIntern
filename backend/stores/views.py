@@ -1,18 +1,40 @@
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Prefetch
 from rest_framework import filters, status, viewsets
 from rest_framework.authtoken.models import Token
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .access import issue_token, password_matches
-from .models import PaymentMethod, Store, StoreComment, StoreFeedback, StorePaymentMethod
+from .access import issue_token, password_matches, IsAuthenticatedOrHasAppAccess
+from .models import PaymentMethod, Store, StoreComment, StoreFeedback, StorePaymentMethod, UserPoints, PointHistory
 from .serializers import PaymentMethodSerializer, StoreCommentSerializer, StoreSerializer
-from rest_framework.decorators import action
 
 User = get_user_model()
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def user_points(request):
+    user_points, _ = UserPoints.objects.get_or_create(user=request.user)
+    history = PointHistory.objects.filter(user=request.user).order_by("-created_at")[:10]
+
+    return Response({
+        "total_points": user_points.points,
+        "recent_history": [
+            {
+                "action": item.get_action_type_display(),
+                "points": item.points,
+                "store_name": item.store.name,
+                "created_at": item.created_at,
+            }
+            for item in history
+        ],
+    })
+
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -88,8 +110,6 @@ class AppAccessView(APIView):
     """Exchanges the shared app password for the token the app sends back."""
 
     permission_classes = [AllowAny]
-    # The only endpoint that can be guessed at, and there is a single password
-    # for everyone to guess, so cap the attempts. Rate: DEFAULT_THROTTLE_RATES.
     throttle_scope = "app-access"
 
     def post(self, request):
@@ -104,15 +124,7 @@ class StoreViewSet(viewsets.ModelViewSet):
     search_fields = ["name", "normalized_name", "address"]
     ordering_fields = ["name", "latitude", "longitude", "updated_at", "created_at"]
     ordering = ["name", "id"]
-
-    def get_permissions(self):
-        # Searching, viewing, and adding store info stay open to everyone.
-        # Voting Good/Bad and posting/editing comments require an account.
-        if self.action == "feedback":
-            return [IsAuthenticated()]
-        if self.action == "comments" and self.request.method in ("POST", "PATCH"):
-            return [IsAuthenticated()]
-        return [AllowAny()]
+    permission_classes = [IsAuthenticatedOrHasAppAccess]
 
     def get_queryset(self):
         statuses = StorePaymentMethod.objects.select_related("payment_method")
@@ -155,6 +167,43 @@ class StoreViewSet(viewsets.ModelViewSet):
             ).count(),
             "my_feedback": current_vote,
         })
+
+    def perform_create(self, serializer):
+        with transaction.atomic():
+            extra = {}
+            if self.request.user.is_authenticated:
+                extra["created_by"] = self.request.user
+            store = serializer.save(**extra)
+            self._award_points(
+                user=self.request.user,
+                store=store,
+                action_type=PointHistory.ActionType.CREATE_STORE,
+                points=3,
+            )
+
+    def perform_update(self, serializer):
+        with transaction.atomic():
+            store = serializer.save()
+            self._award_points(
+                user=self.request.user,
+                store=store,
+                action_type=PointHistory.ActionType.EDIT_STORE,
+                points=1,
+            )
+
+    def _award_points(self, user, store, action_type, points):
+        if not user.is_authenticated:
+            return
+        user_points, _ = UserPoints.objects.get_or_create(user=user)
+        user_points.points += points
+        user_points.save(update_fields=["points", "updated_at"])
+
+        PointHistory.objects.create(
+            user=user,
+            store=store,
+            action_type=action_type,
+            points=points,
+        )
 
     @action(detail=True, methods=["get", "post", "patch"])
     def comments(self, request, pk=None):

@@ -1,10 +1,12 @@
 <script setup>
-import { computed } from "vue"
-import { useRoute } from "vue-router"
+import { computed, onMounted, provide, ref } from "vue"
+import { useRoute, useRouter } from "vue-router"
 
-import { isUnlocked } from "./auth"
+import { clearToken } from "./auth"
+import { getUserPoints } from "./api"
 
 const route = useRoute()
+const router = useRouter()
 
 const showHeaderActions = computed(
   () => route.name !== "login" && route.name !== "register"
@@ -13,6 +15,27 @@ const showHeaderActions = computed(
 const showMainNav = computed(
   () => route.name !== "home" && route.name !== "store-new" && route.name !== "stores"
 )
+
+const userPoints = ref(null)
+
+async function refreshUserPoints() {
+  try {
+    const data = await getUserPoints()
+    userPoints.value = data.total_points
+  } catch {
+    userPoints.value = null
+  }
+}
+
+onMounted(refreshUserPoints)
+
+provide("refreshUserPoints", refreshUserPoints)
+
+function logout() {
+  clearToken()
+  userPoints.value = null
+  router.push({ name: "login" })
+}
 </script>
 
 <template>
@@ -32,12 +55,16 @@ const showMainNav = computed(
           </RouterLink>
         </template>
 
-        <RouterLink
-          v-if="isUnlocked()"
+        <span v-if="userPoints !== null" class="points-badge" title="Your points">
+          <strong>{{ userPoints }}</strong>p
+        </span>
+
+        <button
           class="account-button"
-          to="/account"
+          type="button"
           aria-label="Account"
           title="Account"
+          @click="logout"
         >
           <svg
             viewBox="0 0 24 24"
@@ -50,11 +77,7 @@ const showMainNav = computed(
             <circle cx="12" cy="8" r="4" />
             <path d="M4 21a8 8 0 0 1 16 0" />
           </svg>
-        </RouterLink>
-
-        <RouterLink v-else to="/login">
-          Login
-        </RouterLink>
+        </button>
       </nav>
     </header>
 
