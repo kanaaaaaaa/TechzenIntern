@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Prefetch
+from django.db.models import Count, Prefetch, Q
 from rest_framework import filters, status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
@@ -116,7 +116,36 @@ class StoreViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         statuses = StorePaymentMethod.objects.select_related("payment_method")
-        return Store.objects.prefetch_related(Prefetch("payment_methods", queryset=statuses))
+        queryset = Store.objects.prefetch_related(
+            Prefetch("payment_methods", queryset=statuses)
+        ).annotate(
+            # One aggregate query for the whole page instead of three (or,
+            # with my_feedback below, four) queries per row -- with a few
+            # thousand stores that difference is the gap between a normal
+            # response and the worker running out of memory.
+            annotated_helpful_count=Count(
+                "feedback_votes",
+                filter=Q(feedback_votes__vote=StoreFeedback.Vote.HELPFUL),
+                distinct=True,
+            ),
+            annotated_not_helpful_count=Count(
+                "feedback_votes",
+                filter=Q(feedback_votes__vote=StoreFeedback.Vote.NOT_HELPFUL),
+                distinct=True,
+            ),
+            annotated_comment_count=Count("comments", distinct=True),
+        )
+
+        user = self.request.user
+        if user.is_authenticated:
+            queryset = queryset.prefetch_related(
+                Prefetch(
+                    "feedback_votes",
+                    queryset=StoreFeedback.objects.filter(user=user),
+                    to_attr="my_feedback_votes",
+                )
+            )
+        return queryset
 
     @action(detail=True, methods=["post"])
     def feedback(self, request, pk=None):
