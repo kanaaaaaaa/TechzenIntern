@@ -17,6 +17,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # so nothing changes for setups (Render, CI) that already export these.
 load_dotenv(BASE_DIR / ".env")
 FRONTEND_DIST = BASE_DIR.parent / "frontend" / "dist"
+GOOGLE_PLACES_API_KEY = os.environ.get(
+    "GOOGLE_PLACES_API_KEY",
+    "",
+)
 
 # Production is the default. A forgotten DJANGO_DEBUG must not open the app up,
 # so development is the setting you have to ask for.
@@ -143,6 +147,11 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.TokenAuthentication"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    # Unpaginated store lists serialize every row (and its payment methods)
+    # into one response; with a few thousand stores that alone is enough to
+    # OOM a worker on a small VM.
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 24,
     # One password guards the whole app, so it is one target worth guessing at.
     # Only /api/access/ carries this scope; the rest of the API is unthrottled.
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],

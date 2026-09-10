@@ -7,6 +7,7 @@ from .views import (
     AppAccessView,
     LoginView,
     LogoutView,
+    NearbyPlacesView,
     PaymentMethodViewSet,
     RegisterView,
     StoreViewSet,

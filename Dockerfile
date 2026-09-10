@@ -1,5 +1,6 @@
 # 1. Build the Vue app.
 FROM node:22-slim AS frontend
+ARG VITE_GOOGLE_MAPS_API_KEY
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci

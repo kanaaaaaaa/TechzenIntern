@@ -3,6 +3,7 @@ import { computed, inject, onMounted, reactive, ref } from "vue"
 import { useRouter } from "vue-router"
 
 import PaymentMethodEditor from "../components/PaymentMethodEditor.vue"
+import StorePickerMap from "../components/StorePickerMap.vue"
 import { apiErrorMessage, createStore, listPaymentMethods } from "../api"
 
 const router = useRouter()
@@ -24,6 +25,32 @@ const statusLabels = {
 
 function updateStatus(id, status) {
   statuses[id] = status
+}
+
+function selectGooglePlace(place) {
+  if (place.name) {
+    form.name = place.name
+  }
+
+  if (place.address) {
+    form.address = place.address
+  }
+
+  if (
+    place.latitude !== null &&
+    place.latitude !== undefined
+  ) {
+    form.latitude =
+      Number(place.latitude).toFixed(6)
+  }
+
+  if (
+    place.longitude !== null &&
+    place.longitude !== undefined
+  ) {
+    form.longitude =
+      Number(place.longitude).toFixed(6)
+  }
 }
 
 function optionalCoordinate(value) {
@@ -97,6 +124,9 @@ onMounted(load)
           <label>Latitude <small>Optional</small><input v-model="form.latitude" type="number" min="-90" max="90" step="0.000001" placeholder="e.g. 16.081259"></label>
           <label>Longitude <small>Optional</small><input v-model="form.longitude" type="number" min="-180" max="180" step="0.000001" placeholder="e.g. 108.222577"></label>
         </div>
+        <StorePickerMap
+          @select-place="selectGooglePlace"
+        />
       </div>
     </section>
 

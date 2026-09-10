@@ -64,10 +64,10 @@ class StoreApiTests(UnlockedApiTestCase):
         name_response = self.client.get(reverse("store-list"), {"search": "Supermarket"})
         address_response = self.client.get(reverse("store-list"), {"search": "Kamakura"})
 
-        self.assertEqual(len(name_response.data), 1)
-        self.assertEqual(name_response.data[0]["name"], "Station Supermarket")
-        self.assertEqual(len(address_response.data), 1)
-        self.assertEqual(address_response.data[0]["name"], "Seaside Cafe")
+        self.assertEqual(name_response.data["count"], 1)
+        self.assertEqual(name_response.data["results"][0]["name"], "Station Supermarket")
+        self.assertEqual(address_response.data["count"], 1)
+        self.assertEqual(address_response.data["results"][0]["name"], "Seaside Cafe")
 
     def test_create_store_with_coordinates(self):
         response = self.client.post(

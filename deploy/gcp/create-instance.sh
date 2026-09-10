@@ -20,6 +20,15 @@ gcloud compute firewall-rules describe allow-http --project="$PROJECT_ID" >/dev/
     --target-tags=http-server \
     --description="Allow HTTP for PayMethodFinder"
 
+# SSH is only reachable through Identity-Aware Proxy, not the public internet.
+# `gcloud compute ssh`/`scp` need --tunnel-through-iap to use it (see deploy.sh).
+gcloud compute firewall-rules describe allow-ssh-iap --project="$PROJECT_ID" >/dev/null 2>&1 || \
+  gcloud compute firewall-rules create allow-ssh-iap \
+    --project="$PROJECT_ID" \
+    --allow=tcp:22 \
+    --source-ranges=35.235.240.0/20 \
+    --description="Allow SSH via IAP for PayMethodFinder"
+
 gcloud compute instances create "$INSTANCE_NAME" \
   --project="$PROJECT_ID" \
   --zone="$ZONE" \

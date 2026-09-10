@@ -102,6 +102,7 @@ input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(23, 107, 77
 .store-delete-button:hover { border-color: #e3b6ae; background: #f8e5e1; }
 .store-delete-button:disabled { cursor: wait; opacity: .5; }
 .empty-state { margin: 16px 0; padding: 70px 30px; border: 1px dashed #adb2ab; border-radius: 8px; text-align: center; color: var(--muted); }
+.load-more-row { margin: 24px 0; display: flex; justify-content: center; }
 .empty-state h2 { color: var(--ink); }
 
 .editor-form { padding-bottom: 30px; }

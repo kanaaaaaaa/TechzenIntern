@@ -13,8 +13,8 @@ const ocrError = ref("")
 
 onMounted(async () => {
   try {
-    const stores = await listStores()
-    storeCount.value = stores.length
+    const data = await listStores()
+    storeCount.value = data.count
   } catch {
     storeCount.value = null
   }
@@ -83,6 +83,7 @@ async function handlePhoto(event) {
       <p v-else-if="ocrError" class="ocr-status ocr-status-error">{{ ocrError }}</p>
       <p class="lead">Please add store information <br class="mobile-break">for everyone.</p>
       <div class="hero-actions">
+        <RouterLink class="button secondary" to="/stores/nearby">Nearby registered stores</RouterLink>
         <RouterLink class="button secondary" to="/stores/new">Add a new store</RouterLink>
       </div>
       <p v-if="storeCount !== null" class="record-count"><strong>{{ storeCount }}</strong> stores listed</p>
