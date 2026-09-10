@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 import {
+  api,
   apiErrorMessage,
   createStoreComment,
   deleteStore,
@@ -18,7 +19,10 @@ const router = useRouter()
 
 const query = ref(String(route.query.q || ""))
 const stores = ref([])
+const totalCount = ref(0)
+const nextPageUrl = ref(null)
 const loading = ref(true)
+const loadingMore = ref(false)
 const deletingId = ref(null)
 const votingId = ref(null)
 
@@ -34,7 +38,7 @@ const error = ref("")
 
 
 const resultLabel = computed(() =>
-  loading.value ? "Searching" : `${stores.value.length} store hits`,
+  loading.value ? "Searching" : `${totalCount.value} store hits`,
 )
 
 const statusSymbols = {
@@ -48,10 +52,14 @@ async function search() {
   error.value = ""
 
   try {
-    stores.value = await listStores({
+    const data = await listStores({
       search: query.value.trim(),
       ordering: "-updated_at",
     })
+
+    stores.value = data.results
+    totalCount.value = data.count
+    nextPageUrl.value = data.next
 
     await router.replace({
       name: "stores",
@@ -63,6 +71,23 @@ async function search() {
     error.value = apiErrorMessage(err)
   } finally {
     loading.value = false
+  }
+}
+
+async function loadMore() {
+  if (!nextPageUrl.value || loadingMore.value) return
+
+  loadingMore.value = true
+  error.value = ""
+
+  try {
+    const response = await api.get(nextPageUrl.value)
+    stores.value = [...stores.value, ...response.data.results]
+    nextPageUrl.value = response.data.next
+  } catch (err) {
+    error.value = apiErrorMessage(err)
+  } finally {
+    loadingMore.value = false
   }
 }
 
@@ -593,5 +618,16 @@ onMounted(search)
     >
       Add a new store
     </RouterLink>
+  </div>
+
+  <div v-if="!loading && stores.length && nextPageUrl" class="load-more-row">
+    <button
+      type="button"
+      class="button secondary"
+      :disabled="loadingMore"
+      @click="loadMore"
+    >
+      {{ loadingMore ? "Loading…" : "Load more" }}
+    </button>
   </div>
 </template>

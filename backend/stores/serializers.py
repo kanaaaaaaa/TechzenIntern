@@ -86,11 +86,20 @@ class StoreSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "updated_at"]
 
     def get_helpful_count(self, obj):
+        # StoreViewSet.get_queryset() annotates these in one aggregate query
+        # per page; fall back to a live query for instances that bypass it
+        # (e.g. the object create() just built, before it's re-fetched).
+        annotated = getattr(obj, "annotated_helpful_count", None)
+        if annotated is not None:
+            return annotated
         return obj.feedback_votes.filter(
             vote=StoreFeedback.Vote.HELPFUL
         ).count()
 
     def get_not_helpful_count(self, obj):
+        annotated = getattr(obj, "annotated_not_helpful_count", None)
+        if annotated is not None:
+            return annotated
         return obj.feedback_votes.filter(
             vote=StoreFeedback.Vote.NOT_HELPFUL
         ).count()
@@ -101,6 +110,10 @@ class StoreSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             return None
 
+        prefetched = getattr(obj, "my_feedback_votes", None)
+        if prefetched is not None:
+            return prefetched[0].vote if prefetched else None
+
         return (
             obj.feedback_votes
             .filter(user=request.user)
@@ -109,6 +122,9 @@ class StoreSerializer(serializers.ModelSerializer):
         )
 
     def get_comment_count(self, obj):
+        annotated = getattr(obj, "annotated_comment_count", None)
+        if annotated is not None:
+            return annotated
         return obj.comments.count()
 
     def validate(self, attrs):

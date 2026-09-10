@@ -277,6 +277,11 @@ a named Docker volume.
 Prerequisites: the [gcloud CLI](https://cloud.google.com/sdk/docs/install), authenticated
 (`gcloud auth login`) with a project selected (`gcloud config set project <PROJECT_ID>`).
 
+SSH to the VM only works through Identity-Aware Proxy, not the public internet (the
+`allow-ssh-iap` firewall rule created below only allows Google's IAP range). `deploy.sh`
+already passes `--tunnel-through-iap`; add the same flag to any `gcloud compute ssh`/`scp`
+command you run by hand.
+
 ### First-time setup
 
 ```bash

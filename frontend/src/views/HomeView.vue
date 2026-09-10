@@ -13,8 +13,8 @@ const ocrError = ref("")
 
 onMounted(async () => {
   try {
-    const stores = await listStores()
-    storeCount.value = stores.length
+    const data = await listStores()
+    storeCount.value = data.count
   } catch {
     storeCount.value = null
   }
