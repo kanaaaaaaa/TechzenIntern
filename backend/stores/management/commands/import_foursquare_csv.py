@@ -1,5 +1,5 @@
 import csv
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
@@ -7,10 +7,17 @@ from django.db import transaction
 
 from stores.models import PaymentMethod, Store, StorePaymentMethod, normalize
 
+# Matches Store.latitude/longitude (decimal_places=6). Foursquare's raw
+# coordinates carry far more precision, so rows for the same place round to
+# the same value here that they will once saved -- otherwise the duplicate
+# check below misses matches that the database's unique constraint still
+# catches, and the second insert fails instead of being skipped.
+COORDINATE_PRECISION = Decimal("0.000001")
+
 
 def coordinate(value, minimum, maximum):
     try:
-        result = Decimal(value)
+        result = Decimal(value).quantize(COORDINATE_PRECISION, rounding=ROUND_HALF_UP)
     except (InvalidOperation, TypeError):
         return None
     return result if minimum <= result <= maximum else None
