@@ -1,3 +1,8 @@
+import json
+from urllib import error as urllib_error
+from urllib import request as urllib_request
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import Prefetch
 from rest_framework import filters, status, viewsets
@@ -82,6 +87,174 @@ class AccountView(APIView):
             "username": request.user.username,
             "date_joined": request.user.date_joined,
         })
+
+
+class NearbyPlacesView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            latitude = float(
+                request.data.get("latitude")
+            )
+            longitude = float(
+                request.data.get("longitude")
+            )
+            radius = float(
+                request.data.get("radius", 1000)
+            )
+        except (TypeError, ValueError):
+            raise ValidationError({
+                "location": [
+                    "Valid latitude and longitude are required."
+                ]
+            })
+
+        if not -90 <= latitude <= 90:
+            raise ValidationError({
+                "latitude": ["Invalid latitude."]
+            })
+
+        if not -180 <= longitude <= 180:
+            raise ValidationError({
+                "longitude": ["Invalid longitude."]
+            })
+
+        if radius <= 0 or radius > 2000:
+            raise ValidationError({
+                "radius": [
+                    "Radius must be between 1 and 2000 meters."
+                ]
+            })
+
+        if not settings.GOOGLE_PLACES_API_KEY:
+            return Response(
+                {
+                    "detail":
+                    "GOOGLE_PLACES_API_KEY is not set."
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        payload = {
+            "includedTypes": [
+                "restaurant",
+                "cafe",
+                "coffee_shop",
+                "bakery",
+                "bar",
+                "meal_takeaway",
+                "food_court",
+                "dessert_shop",
+                "ice_cream_shop",
+
+                "convenience_store",
+                "supermarket",
+                "grocery_store",
+                "department_store",
+                "shopping_mall",
+                "store",
+                "market",
+
+                "pharmacy",
+                "drugstore",
+
+                "gas_station",
+                "parking",
+
+                "hotel",
+                "lodging",
+
+                "movie_theater",
+
+                "beauty_salon",
+                "hair_salon",
+                "barber_shop",
+                "nail_salon",
+                "laundry",
+                "spa",
+
+                "gym",
+            ],
+            "maxResultCount": 20,
+            "rankPreference": "DISTANCE",
+            "locationRestriction": {
+                "circle": {
+                    "center": {
+                        "latitude": latitude,
+                        "longitude": longitude,
+                    },
+                    "radius": radius,
+                }
+            },
+        }
+
+        google_request = urllib_request.Request(
+            "https://places.googleapis.com/v1/places:searchNearby",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "X-Goog-Api-Key":
+                    settings.GOOGLE_PLACES_API_KEY,
+                "X-Goog-FieldMask": (
+                    "places.id,"
+                    "places.displayName,"
+                    "places.formattedAddress,"
+                    "places.location"
+                ),
+            },
+            method="POST",
+        )
+
+        try:
+            with urllib_request.urlopen(
+                google_request,
+                timeout=10,
+            ) as response:
+                data = json.load(response)
+
+        except urllib_error.HTTPError as exc:
+            detail = exc.read().decode(
+                "utf-8",
+                errors="replace",
+            )
+
+            return Response(
+                {
+                    "detail":
+                    f"Google Places API error: {detail}"
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        except urllib_error.URLError:
+            return Response(
+                {
+                    "detail":
+                    "Could not reach Google Places API."
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        places = []
+
+        for place in data.get("places", []):
+            location = place.get("location") or {}
+
+            places.append({
+                "place_id": place.get("id"),
+                "name": (
+                    place.get("displayName") or {}
+                ).get("text", ""),
+                "address":
+                    place.get("formattedAddress", ""),
+                "latitude":
+                    location.get("latitude"),
+                "longitude":
+                    location.get("longitude"),
+            })
+
+        return Response(places)
 
 
 class AppAccessView(APIView):

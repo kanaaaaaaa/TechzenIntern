@@ -32,6 +32,7 @@ const editingCommentId = ref(null)
 const editCommentDraft = ref("")
 const error = ref("")
 
+
 const resultLabel = computed(() =>
   loading.value ? "Searching" : `${stores.value.length} store hits`,
 )
@@ -242,6 +243,8 @@ onMounted(search)
       </button>
     </div>
   </form>
+
+  
 
   <div class="result-head">
     <strong>{{ resultLabel }}</strong>
