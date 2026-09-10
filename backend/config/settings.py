@@ -17,6 +17,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # so nothing changes for setups (Render, CI) that already export these.
 load_dotenv(BASE_DIR / ".env")
 FRONTEND_DIST = BASE_DIR.parent / "frontend" / "dist"
+GOOGLE_PLACES_API_KEY = os.environ.get(
+    "GOOGLE_PLACES_API_KEY",
+    "",
+)
 
 # Production is the default. A forgotten DJANGO_DEBUG must not open the app up,
 # so development is the setting you have to ask for.
