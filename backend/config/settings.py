@@ -39,7 +39,7 @@ def env_secret(name, development_value):
 # Never give these a usable default: a secret with a fallback baked into the
 # repository is a secret everyone who can read the repository already has.
 SECRET_KEY = env_secret("DJANGO_SECRET_KEY", "insecure-development-secret-key")
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,192.168.252.1")
 
 # Render exposes the public hostname this way; other hosts use DJANGO_ALLOWED_HOSTS.
 if os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
@@ -113,8 +113,8 @@ WHITENOISE_ROOT = FRONTEND_DIST if FRONTEND_DIST.exists() else None
 WHITENOISE_INDEX_FILE = True
 
 # Only needed while the frontend runs on its own Vite server.
-CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
-CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "")
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://192.168.252.1:5173")
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "http://192.168.252.1:5173")
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
