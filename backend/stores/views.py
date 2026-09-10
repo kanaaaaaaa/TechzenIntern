@@ -1,18 +1,41 @@
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Prefetch
 from rest_framework import filters, status, viewsets
 from rest_framework.authtoken.models import Token
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .access import issue_token, password_matches
-from .models import PaymentMethod, Store, StoreComment, StoreFeedback, StorePaymentMethod
-from .serializers import PaymentMethodSerializer, StoreCommentSerializer, StoreSerializer
-from rest_framework.decorators import action
+from .access import issue_token, password_matches, IsAuthenticatedOrHasAppAccess
+from .models import PaymentMethod, Store, StoreFeedback, StorePaymentMethod, UserPoints, PointHistory
+from .serializers import PaymentMethodSerializer, StoreSerializer
 
 User = get_user_model()
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def user_points(request):
+    """ログイン中のユーザーのポイント情報を取得"""
+    user_points, _ = UserPoints.objects.get_or_create(user=request.user)
+    history = PointHistory.objects.filter(user=request.user).order_by("-created_at")[:10]
+
+    return Response({
+        "total_points": user_points.points,
+        "recent_history": [
+            {
+                "action": item.get_action_type_display(),
+                "points": item.points,
+                "store_name": item.store.name,
+                "created_at": item.created_at,
+            }
+            for item in history
+        ],
+    })
+
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -74,22 +97,10 @@ class LogoutView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class AccountView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        return Response({
-            "username": request.user.username,
-            "date_joined": request.user.date_joined,
-        })
-
-
 class AppAccessView(APIView):
     """Exchanges the shared app password for the token the app sends back."""
 
     permission_classes = [AllowAny]
-    # The only endpoint that can be guessed at, and there is a single password
-    # for everyone to guess, so cap the attempts. Rate: DEFAULT_THROTTLE_RATES.
     throttle_scope = "app-access"
 
     def post(self, request):
@@ -104,15 +115,7 @@ class StoreViewSet(viewsets.ModelViewSet):
     search_fields = ["name", "normalized_name", "address"]
     ordering_fields = ["name", "latitude", "longitude", "updated_at", "created_at"]
     ordering = ["name", "id"]
-
-    def get_permissions(self):
-        # Searching, viewing, and adding store info stay open to everyone.
-        # Voting Good/Bad and posting/editing comments require an account.
-        if self.action == "feedback":
-            return [IsAuthenticated()]
-        if self.action == "comments" and self.request.method in ("POST", "PATCH"):
-            return [IsAuthenticated()]
-        return [AllowAny()]
+    permission_classes = [IsAuthenticatedOrHasAppAccess]
 
     def get_queryset(self):
         statuses = StorePaymentMethod.objects.select_related("payment_method")
@@ -156,74 +159,48 @@ class StoreViewSet(viewsets.ModelViewSet):
             "my_feedback": current_vote,
         })
 
-    @action(detail=True, methods=["get", "post", "patch"])
-    def comments(self, request, pk=None):
-        store = self.get_object()
-
-        if request.method == "GET":
-            comments = StoreComment.objects.filter(
-                store=store
-            ).select_related("user")
-
-            serializer = StoreCommentSerializer(
-                comments,
-                many=True,
-                context={"request": request},
-            )
-            return Response(serializer.data)
-
-        if request.method == "POST":
-            if StoreComment.objects.filter(
+    def perform_create(self, serializer):
+        """新店舗作成時に +3 ポイント"""
+        with transaction.atomic():
+            extra = {}
+            if self.request.user.is_authenticated:
+                extra["created_by"] = self.request.user
+            store = serializer.save(**extra)
+            self._award_points(
+                user=self.request.user,
                 store=store,
-                user=request.user,
-            ).exists():
-                raise ValidationError({
-                    "text": ["You can only post one comment per store."]
-                })
-
-            serializer = StoreCommentSerializer(
-                data=request.data,
-                context={"request": request},
+                action_type=PointHistory.ActionType.CREATE_STORE,
+                points=3,
             )
-            serializer.is_valid(raise_exception=True)
 
-            comment = serializer.save(
+    def perform_update(self, serializer):
+        """店舗編集時に +1 ポイント"""
+        with transaction.atomic():
+            store = serializer.save()
+            self._award_points(
+                user=self.request.user,
                 store=store,
-                user=request.user,
+                action_type=PointHistory.ActionType.EDIT_STORE,
+                points=1,
             )
 
-            return Response(
-                StoreCommentSerializer(
-                    comment,
-                    context={"request": request},
-                ).data,
-                status=status.HTTP_201_CREATED,
-            )
+    def _award_points(self, user, store, action_type, points):
+        """ポイント付与の共通処理"""
+        if not user.is_authenticated:
+            return
+        user_points, _ = UserPoints.objects.get_or_create(user=user)
+        user_points.points += points
+        user_points.save(update_fields=["points", "updated_at"])
 
-        try:
-            comment = StoreComment.objects.get(
-                store=store,
-                user=request.user,
-            )
-        except StoreComment.DoesNotExist:
-            raise ValidationError({
-                "text": ["You have not posted a comment yet."]
-            })
-
-        serializer = StoreCommentSerializer(
-            comment,
-            data=request.data,
-            partial=True,
-            context={"request": request},
+        PointHistory.objects.create(
+            user=user,
+            store=store,
+            action_type=action_type,
+            points=points,
         )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response(serializer.data)
 
 
 class PaymentMethodViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [AllowAny]
     serializer_class = PaymentMethodSerializer
     pagination_class = None
 

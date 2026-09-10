@@ -5,7 +5,9 @@ import { clearToken, getToken } from "./auth"
 
 export const api = axios.create({
   // In a build, Django serves the app from the same origin, so /api is enough.
-  baseURL: import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "/api"),
+  baseURL: import.meta.env.VITE_API_URL || (import.meta.env.DEV
+    ? `http://${window.location.hostname}:8000/api`
+    : "/api"),
   timeout: 10000,
 })
 
@@ -69,13 +71,8 @@ export const updateStoreComment = (id, text) =>
 export const listPaymentMethods = () =>
   api.get("/payment-methods/").then((response) => response.data)
 
-export const ocrImage = (imageFile) => {
-  const formData = new FormData()
-  formData.append("image", imageFile)
-  return api
-    .post("/ocr/", formData, { headers: { "Content-Type": "multipart/form-data" } })
-    .then((response) => response.data)
-}
+export const getUserPoints = () =>
+  api.get("/user/points/").then((response) => response.data)
 
 export function apiErrorMessage(error) {
   if (!error.response) return "Cannot reach the API. Check that the Django server is running."

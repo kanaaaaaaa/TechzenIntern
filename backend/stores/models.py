@@ -31,6 +31,14 @@ class Store(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    #以下変更点
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,  # 既存データのため
+        blank=True,
+        related_name="created_stores",
+        on_delete=models.SET_NULL,
+    )
 
     class Meta:
         ordering = ["name", "id"]
@@ -163,3 +171,43 @@ class StorePaymentMethod(models.Model):
 
     def __str__(self):
         return f"{self.store} - {self.payment_method}: {self.get_status_display()}"
+
+
+class UserPoints(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        related_name="points",
+        on_delete=models.CASCADE,
+    )
+    points = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "User points"
+
+    def __str__(self):
+        return f"{self.user.username}: {self.points}p"
+
+
+class PointHistory(models.Model):
+    class ActionType(models.TextChoices):
+        CREATE_STORE = "create_store", "New store (+3p)"
+        EDIT_STORE = "edit_store", "Edit store (+1p)"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="point_history",
+        on_delete=models.CASCADE,
+    )
+    store = models.ForeignKey(Store, related_name="point_histories", on_delete=models.CASCADE)
+    action_type = models.CharField(max_length=20, choices=ActionType.choices)
+    points = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Point histories"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_action_type_display()} ({self.points}p)"

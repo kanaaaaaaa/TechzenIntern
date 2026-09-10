@@ -44,7 +44,7 @@ def env_secret(name, development_value):
 # Never give these a usable default: a secret with a fallback baked into the
 # repository is a secret everyone who can read the repository already has.
 SECRET_KEY = env_secret("DJANGO_SECRET_KEY", "insecure-development-secret-key")
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,192.168.252.1")
 
 # Render exposes the public hostname this way; other hosts use DJANGO_ALLOWED_HOSTS.
 if os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
@@ -118,8 +118,8 @@ WHITENOISE_ROOT = FRONTEND_DIST if FRONTEND_DIST.exists() else None
 WHITENOISE_INDEX_FILE = True
 
 # Only needed while the frontend runs on its own Vite server.
-CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
-CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "")
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://192.168.252.1:5173")
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "http://192.168.252.1:5173")
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -139,21 +139,16 @@ APP_PASSWORD = env_secret("APP_PASSWORD", "development-only-password")
 APP_ACCESS_MAX_AGE = int(os.environ.get("APP_ACCESS_MAX_AGE", 60 * 60 * 24 * 30))
 
 REST_FRAMEWORK = {
-    # Everything needs the app password; the token is issued by /api/access/.
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.TokenAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "stores.access.AppAccessAuthentication",
+    ],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
-    # One password guards the whole app, so it is one target worth guessing at.
-    # Only /api/access/ carries this scope; the rest of the API is unthrottled.
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
     "DEFAULT_THROTTLE_RATES": {
         "app-access": os.environ.get("APP_ACCESS_THROTTLE_RATE", "10/hour"),
     },
-    # Throttling counts per client IP. Render terminates TLS on one proxy in
-    # front of this service, so the last X-Forwarded-For entry is the real
-    # client. Left unset, DRF keys off the whole header, which a client can
-    # forge to hand itself a fresh bucket on every request. Set 0 when nothing
-    # proxies this service.
     "NUM_PROXIES": int(os.environ.get("DJANGO_NUM_PROXIES", "1")),
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
 }
