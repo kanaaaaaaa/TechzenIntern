@@ -143,6 +143,11 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.TokenAuthentication"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    # Unpaginated store lists serialize every row (and its payment methods)
+    # into one response; with a few thousand stores that alone is enough to
+    # OOM a worker on a small VM.
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 24,
     # One password guards the whole app, so it is one target worth guessing at.
     # Only /api/access/ carries this scope; the rest of the API is unthrottled.
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.ScopedRateThrottle"],
