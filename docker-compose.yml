@@ -1,0 +1,28 @@
+# Compute Engine VM 上で `app` (Django + Vue, 既存の Dockerfile) と `db`
+# (PostgreSQL) を同一ホストで動かすための構成。詳細は README.md の
+# "Google Cloud (Compute Engine)" セクションを参照。
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env.gcp
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env.gcp
+    ports:
+      - "80:8000"
+
+volumes:
+  postgres_data:

@@ -2,7 +2,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import PaymentMethod, Store, StoreFeedback, StorePaymentMethod
+from .models import PaymentMethod, Store, StoreComment, StoreFeedback, StorePaymentMethod
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
     category_label = serializers.CharField(source="get_category_display", read_only=True)
@@ -25,6 +25,37 @@ class PaymentStatusInputSerializer(serializers.Serializer):
     payment_method_id = serializers.IntegerField(min_value=1)
     status = serializers.ChoiceField(choices=StorePaymentMethod.Status.choices)
 
+
+class StoreCommentSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    is_mine = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StoreComment
+        fields = [
+            "id",
+            "username",
+            "text",
+            "is_mine",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "username",
+            "is_mine",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_is_mine(self, obj):
+        request = self.context.get("request")
+
+        return bool(
+            request
+            and request.user.is_authenticated
+            and obj.user_id == request.user.id
+        )
 
 class StoreSerializer(serializers.ModelSerializer):
     payment_methods = StorePaymentMethodSerializer(many=True, read_only=True)
@@ -49,6 +80,7 @@ class StoreSerializer(serializers.ModelSerializer):
             "helpful_count",
             "not_helpful_count",
             "my_feedback",
+            "comment_count",
             "created_at",
             "updated_at",
             "created_by",
@@ -77,6 +109,9 @@ class StoreSerializer(serializers.ModelSerializer):
             .values_list("vote", flat=True)
             .first()
         )
+
+    def get_comment_count(self, obj):
+        return obj.comments.count()
 
     def validate(self, attrs):
         latitude = attrs.get("latitude", getattr(self.instance, "latitude", None))

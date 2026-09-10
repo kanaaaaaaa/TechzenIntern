@@ -6,7 +6,6 @@ import { clearToken } from "./auth"
 import { getUserPoints } from "./api"
 
 const route = useRoute()
-const router = useRouter()
 
 const showHeaderActions = computed(
   () => route.name !== "login" && route.name !== "register"
@@ -49,6 +48,7 @@ function logout() {
       <nav v-if="showHeaderActions" aria-label="Main navigation">
         <template v-if="showMainNav">
           <RouterLink to="/stores">Find stores</RouterLink>
+
           <RouterLink class="nav-primary" to="/stores/new">
             Add a store
           </RouterLink>
@@ -60,10 +60,9 @@ function logout() {
 
         <button
           class="account-button"
-          type="button"
+          to="/account"
           aria-label="Account"
           title="Account"
-          @click="logout"
         >
           <svg
             viewBox="0 0 24 24"
@@ -76,7 +75,11 @@ function logout() {
             <circle cx="12" cy="8" r="4" />
             <path d="M4 21a8 8 0 0 1 16 0" />
           </svg>
-        </button>
+        </RouterLink>
+
+        <RouterLink v-else to="/login">
+          Login
+        </RouterLink>
       </nav>
     </header>
 

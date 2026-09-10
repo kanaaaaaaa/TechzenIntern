@@ -154,7 +154,8 @@ input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(23, 107, 77
 
 @media (max-width: 800px) {
   .site-header { padding: 0 20px; }
-  .site-header nav > a:first-child { display: none; }
+  .site-header nav {gap: 14px;}
+  .site-header .nav-primary {display: none;}
   .page-shell, .site-footer { width: min(100% - 32px, 1160px); }
   .hero { padding: 18px 0 70px; }
   .finder-card { width: min(100% - 20px, 450px); }
@@ -259,4 +260,169 @@ input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(23, 107, 77
 .feedback-button:disabled {
   cursor: default;
   opacity: .6;
+}
+
+.store-comments {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.comment-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.comment-form textarea {
+  width: 100%;
+  min-height: 76px;
+  padding: 10px 12px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  outline: none;
+}
+
+.comment-form textarea:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(23, 107, 77, .12);
+}
+
+.comment-post-button {
+  min-height: 42px;
+  flex-shrink: 0;
+}
+
+.comment-list {
+  margin-top: 14px;
+}
+
+.comment-item {
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.comment-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.comment-head strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.comment-head span {
+  color: var(--muted);
+  font: 500 9px var(--mono);
+}
+
+.comment-item p {
+  margin: 7px 0 0;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.comment-loading,
+.no-comments,
+.comment-login-prompt {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.comment-head-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.comment-edit-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.comment-edit-textarea {
+  width: 100%;
+  min-height: 76px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+}
+
+.comment-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.account-button {
+  text-decoration: none;
+}
+
+.account-panel {
+  width: min(100%, 520px);
+  margin: 0 auto;
+  padding: 72px 0;
+}
+
+.account-panel h1 {
+  margin: 0 0 32px;
+  font-size: 36px;
+}
+
+.account-details {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.account-details div {
+  padding: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.account-details div:last-child {
+  border-bottom: 0;
+}
+
+.account-details dt {
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.account-details dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.account-logout-button {
+  width: 100%;
+  margin-top: 20px;
+  background: transparent;
+  color: var(--red);
+  border-color: var(--red);
 }
