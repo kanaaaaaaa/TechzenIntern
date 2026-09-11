@@ -15,7 +15,10 @@ services:
       retries: 10
 
   app:
-    build: .
+    build: 
+      context: .
+      args:
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
     restart: unless-stopped
     depends_on:
       db:

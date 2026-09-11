@@ -33,10 +33,11 @@ gcloud compute ssh --project="$PROJECT_ID" --zone="$ZONE" --tunnel-through-iap "
   set -e
   sudo mkdir -p '$REMOTE_DIR'
   sudo rsync -a --delete \
+    --exclude=.env.gcp \
     --exclude=db.sqlite3 --exclude=staticfiles --exclude=dist \
     --exclude=node_modules --exclude=__pycache__ \
     ~/$REMOTE_STAGING/ '$REMOTE_DIR/'
   rm -rf ~/$REMOTE_STAGING
   cd '$REMOTE_DIR'
-  sudo docker compose up -d --build
+  sudo docker compose --env-file .env.gcp up -d --build
 "
