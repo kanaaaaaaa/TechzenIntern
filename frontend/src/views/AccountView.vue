@@ -1,11 +1,12 @@
 <script setup>
-import { onMounted, ref } from "vue"
+import { inject, onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
 
 import { clearToken } from "../auth"
 import { apiErrorMessage, getAccount, logout } from "../api"
 
 const router = useRouter()
+const refreshUserPoints = inject("refreshUserPoints")
 
 const account = ref(null)
 const loading = ref(true)
@@ -34,6 +35,7 @@ async function handleLogout() {
   }
 
   clearToken()
+  refreshUserPoints?.()
   await router.push({ name: "login" })
 }
 

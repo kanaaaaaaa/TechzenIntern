@@ -2,7 +2,7 @@
 import { computed, onMounted, provide, ref } from "vue"
 import { useRoute } from "vue-router"
 
-import { clearToken, getToken } from "./auth"
+import { getToken } from "./auth"
 import { getUserPoints } from "./api"
 
 const route = useRoute()
@@ -33,11 +33,6 @@ async function refreshUserPoints() {
 onMounted(refreshUserPoints)
 
 provide("refreshUserPoints", refreshUserPoints)
-
-function logout() {
-  clearToken()
-  userPoints.value = null
-}
 </script>
 
 <template>
