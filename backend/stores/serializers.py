@@ -65,6 +65,7 @@ class StoreSerializer(serializers.ModelSerializer):
     not_helpful_count = serializers.SerializerMethodField()
     my_feedback = serializers.SerializerMethodField()
     comment_count = serializers.SerializerMethodField()
+    points_awarded = serializers.SerializerMethodField()
     category_label = serializers.CharField(source="get_category_display", read_only=True)
 
     class Meta:
@@ -83,6 +84,7 @@ class StoreSerializer(serializers.ModelSerializer):
             "not_helpful_count",
             "my_feedback",
             "comment_count",
+            "points_awarded",
             "created_at",
             "updated_at",
         ]
@@ -129,6 +131,11 @@ class StoreSerializer(serializers.ModelSerializer):
         if annotated is not None:
             return annotated
         return obj.comments.count()
+
+    def get_points_awarded(self, obj):
+        if hasattr(obj, "_points_awarded"):
+            return obj._points_awarded
+        return self.context.get("points_awarded", 0)
 
     def validate(self, attrs):
         latitude = attrs.get("latitude", getattr(self.instance, "latitude", None))
@@ -182,6 +189,8 @@ class StoreSerializer(serializers.ModelSerializer):
             user_points, _ = UserPoints.objects.get_or_create(user=request.user)
             user_points.total_points += points_to_add
             user_points.save(update_fields=["total_points", "updated_at"])
+            return points_to_add
+        return 0
 
     @transaction.atomic
     def create(self, validated_data):
@@ -195,6 +204,8 @@ class StoreSerializer(serializers.ModelSerializer):
         ])
         self._save_statuses(store, statuses)
         self._award_points(3)
+        self.context["points_awarded"] = 3
+        store._points_awarded = 3
         return store
 
     @transaction.atomic
@@ -204,4 +215,6 @@ class StoreSerializer(serializers.ModelSerializer):
         if statuses is not None:
             self._save_statuses(instance, statuses)
         self._award_points(1)
+        self.context["points_awarded"] = 1
+        instance._points_awarded = 1
         return instance

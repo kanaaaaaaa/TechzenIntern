@@ -1,8 +1,9 @@
 <script setup>
-import { computed, inject, onMounted, reactive, ref } from "vue"
+import { computed, inject, onBeforeUnmount, onMounted, reactive, ref } from "vue"
 import { useRouter } from "vue-router"
 
 import PaymentMethodEditor from "../components/PaymentMethodEditor.vue"
+import PointsRewardOverlay from "../components/PointsRewardOverlay.vue"
 import StorePickerMap from "../components/StorePickerMap.vue"
 import { STORE_CATEGORIES } from "../categories"
 import { apiErrorMessage, createStore, listPaymentMethods } from "../api"
@@ -19,6 +20,19 @@ const loading = ref(true)
 const saving = ref(false)
 const confirming = ref(false)
 const error = ref("")
+const pointsEarned = ref(0)
+const showingPoints = ref(false)
+let pointsTimer
+
+function showPoints(points, after) {
+  if (pointsTimer) window.clearTimeout(pointsTimer)
+  pointsEarned.value = points
+  showingPoints.value = true
+  pointsTimer = window.setTimeout(() => {
+    showingPoints.value = false
+    after()
+  }, 1500)
+}
 
 const canReview = computed(() => form.name.trim() && !loading.value)
 const statusLabels = {
@@ -98,7 +112,7 @@ async function save() {
   saving.value = true
   error.value = ""
   try {
-    await createStore({
+    const data = await createStore({
       name: form.name.trim(),
       address: form.address.trim(),
       latitude: optionalCoordinate(form.latitude),
@@ -110,7 +124,7 @@ async function save() {
       })),
     })
     refreshUserPoints?.()
-    await router.push({ name: "stores" })
+    showPoints(data?.points_awarded || 3, () => router.push({ name: "home" }))
   } catch (err) {
     error.value = apiErrorMessage(err)
   } finally {
@@ -119,9 +133,15 @@ async function save() {
 }
 
 onMounted(load)
+
+onBeforeUnmount(() => {
+  if (pointsTimer) window.clearTimeout(pointsTimer)
+})
 </script>
 
 <template>
+  <PointsRewardOverlay v-if="showingPoints" :points="pointsEarned" />
+
   <section v-if="confirming" class="page-heading confirmation-heading">
     <h1>Please confirm the details.</h1>
   </section>
