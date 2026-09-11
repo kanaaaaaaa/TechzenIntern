@@ -7,6 +7,7 @@ import {
   apiErrorMessage,
   createStoreComment,
   deleteStore,
+  listPaymentMethods,
   listStoreComments,
   listStores,
   submitStoreFeedback,
@@ -18,6 +19,8 @@ const route = useRoute()
 const router = useRouter()
 
 const query = ref(String(route.query.q || ""))
+const paymentMethods = ref([])
+const selectedMethods = ref(new Set())
 const stores = ref([])
 const totalCount = ref(0)
 const nextPageUrl = ref(null)
@@ -52,20 +55,29 @@ async function search() {
   error.value = ""
 
   try {
-    const data = await listStores({
+    const params = {
       search: query.value.trim(),
       ordering: "-updated_at",
-    })
+    }
+
+    if (selectedMethods.value.size > 0) {
+      params.payment_methods = Array.from(selectedMethods.value).join(",")
+      params.payment_method_status = "accepted"
+    }
+
+    const data = await listStores(params)
 
     stores.value = data.results
     totalCount.value = data.count
     nextPageUrl.value = data.next
 
+    const newQuery = {}
+    if (query.value.trim()) newQuery.q = query.value.trim()
+    if (selectedMethods.value.size > 0) newQuery.methods = Array.from(selectedMethods.value).join(",")
+
     await router.replace({
       name: "stores",
-      query: query.value.trim()
-        ? { q: query.value.trim() }
-        : {},
+      query: newQuery,
     })
   } catch (err) {
     error.value = apiErrorMessage(err)
@@ -81,7 +93,12 @@ async function loadMore() {
   error.value = ""
 
   try {
-    const response = await api.get(nextPageUrl.value)
+    const url = new URL(nextPageUrl.value, window.location.origin)
+    if (selectedMethods.value.size > 0) {
+      url.searchParams.set("payment_methods", Array.from(selectedMethods.value).join(","))
+      url.searchParams.set("payment_method_status", "accepted")
+    }
+    const response = await api.get(url.toString())
     stores.value = [...stores.value, ...response.data.results]
     nextPageUrl.value = response.data.next
   } catch (err) {
@@ -89,6 +106,31 @@ async function loadMore() {
   } finally {
     loadingMore.value = false
   }
+}
+
+async function loadPaymentMethods() {
+  try {
+    const data = await listPaymentMethods()
+    paymentMethods.value = data
+  } catch (err) {
+    console.error("Failed to load payment methods:", err)
+  }
+}
+
+function toggleMethod(methodId) {
+  const newSet = new Set(selectedMethods.value)
+  if (newSet.has(methodId)) {
+    newSet.delete(methodId)
+  } else {
+    newSet.add(methodId)
+  }
+  selectedMethods.value = newSet
+  search()
+}
+
+function clearFilters() {
+  selectedMethods.value.clear()
+  search()
 }
 
 function requireLogin() {
@@ -247,9 +289,18 @@ async function removeStore(store) {
   }
 }
 
-onMounted(search)
-</script>
+onMounted(async () => {
+  await loadPaymentMethods()
 
+  const methodsParam = route.query.methods
+  if (methodsParam) {
+    const methodIds = String(methodsParam).split(",").map(Number).filter(Boolean)
+    methodIds.forEach((id) => selectedMethods.value.add(id))
+  }
+
+  search()
+})
+</script>
 <template>
   <form class="search-panel" @submit.prevent="search">
     <label class="visually-hidden" for="store-search">
@@ -269,7 +320,30 @@ onMounted(search)
     </div>
   </form>
 
-  
+  <div v-if="paymentMethods.length" class="method-filter">
+    <div class="method-filter-label">Filter by payment method:</div>
+    <div class="method-filter-buttons">
+      <button
+        v-for="method in paymentMethods"
+        :key="method.id"
+        type="button"
+        class="method-filter-button"
+        :class="{ active: selectedMethods.has(method.id) }"
+        @click="toggleMethod(method.id)"
+        :aria-pressed="selectedMethods.has(method.id)"
+      >
+        {{ method.name }}
+      </button>
+      <button
+        v-if="selectedMethods.size > 0"
+        type="button"
+        class="method-filter-button clear"
+        @click="clearFilters"
+      >
+        Clear
+      </button>
+    </div>
+  </div>
 
   <div class="result-head">
     <strong>{{ resultLabel }}</strong>
