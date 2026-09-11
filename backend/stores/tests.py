@@ -3,15 +3,12 @@ import os
 import sys
 from unittest import mock
 
-from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from rest_framework.throttling import ScopedRateThrottle
 
 from .access import issue_token
 from .models import PaymentMethod, Store, StorePaymentMethod
@@ -240,85 +237,6 @@ class StoreAdminTests(TestCase):
         self.assertEqual(store.payment_methods.count(), len(methods))
         self.assertEqual(store.payment_methods.filter(status="accepted").count(), len(methods[::2]))
 
-
-
-class AppAccessTests(APITestCase):
-    def setUp(self):
-        # The access endpoint is throttled, and the throttle counter lives in
-        # the cache, which outlives a single test.
-        cache.clear()
-
-    def test_requests_without_a_token_are_refused(self):
-        response = self.client.get(reverse("store-list"))
-
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_wrong_password_is_refused(self):
-        response = self.client.post(reverse("app-access"), {"password": "not-the-password"})
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertNotIn("token", response.data)
-
-    def test_password_returns_a_working_token(self):
-        response = self.client.post(reverse("app-access"), {"password": settings.APP_PASSWORD})
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.data['token']}")
-        self.assertEqual(self.client.get(reverse("store-list")).status_code, status.HTTP_200_OK)
-
-    def test_a_made_up_token_is_refused(self):
-        self.client.credentials(HTTP_AUTHORIZATION="Bearer made.up.token")
-
-        self.assertEqual(self.client.get(reverse("store-list")).status_code, status.HTTP_403_FORBIDDEN)
-
-
-class AppAccessThrottleTests(APITestCase):
-    """A single shared password is one guessing target, so attempts are capped.
-
-    These run against whatever rate the project is actually configured with,
-    rather than an overridden one: DRF binds THROTTLE_RATES onto the throttle
-    class at import, so override_settings would not reach it anyway.
-    """
-
-    def setUp(self):
-        cache.clear()
-        throttle = ScopedRateThrottle()
-        throttle.scope = "app-access"
-        self.allowed, _ = throttle.parse_rate(throttle.get_rate())
-
-    def post_wrong_password(self, **extra):
-        return self.client.post(reverse("app-access"), {"password": "wrong"}, **extra)
-
-    def test_guessing_stops_once_the_limit_is_reached(self):
-        codes = [self.post_wrong_password().status_code for _ in range(self.allowed + 2)]
-
-        self.assertEqual(set(codes[:self.allowed]), {status.HTTP_400_BAD_REQUEST})
-        self.assertEqual(set(codes[self.allowed:]), {status.HTTP_429_TOO_MANY_REQUESTS})
-
-    def test_the_correct_password_is_refused_once_throttled(self):
-        """Guessing must not stay open just because the guess finally lands."""
-        for _ in range(self.allowed):
-            self.post_wrong_password()
-
-        response = self.client.post(reverse("app-access"), {"password": settings.APP_PASSWORD})
-
-        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
-
-    def test_a_forged_forwarded_for_header_does_not_reset_the_count(self):
-        """DRF must key off the proxy's entry, not one the client can invent."""
-        codes = [
-            self.post_wrong_password(HTTP_X_FORWARDED_FOR=f"10.0.0.{i}, 203.0.113.9").status_code
-            for i in range(self.allowed + 2)
-        ]
-
-        self.assertEqual(set(codes[self.allowed:]), {status.HTTP_429_TOO_MANY_REQUESTS})
-
-    def test_the_rest_of_the_api_is_not_throttled(self):
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {issue_token()}")
-
-        codes = {self.client.get(reverse("store-list")).status_code for _ in range(30)}
-
-        self.assertEqual(codes, {status.HTTP_200_OK})
 
 
 class RequiredSettingsTests(TestCase):

@@ -36,7 +36,7 @@ async function handleLogout() {
 
   clearToken()
   refreshUserPoints?.()
-  await router.push({ name: "login" })
+  await router.push({ name: "home" })
 }
 
 onMounted(loadAccount)
