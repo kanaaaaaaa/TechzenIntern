@@ -14,7 +14,6 @@ defineEmits(["update-status"])
     <div v-for="method in methods" :key="method.id" class="method-edit-row">
       <div>
         <strong>{{ method.name }}</strong>
-        <small>{{ method.code }}</small>
       </div>
       <StatusControl
         :model-value="statuses[method.id] || 'unknown'"

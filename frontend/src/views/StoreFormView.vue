@@ -76,6 +76,14 @@ function review() {
   window.scrollTo({ top: 0, behavior: "smooth" })
 }
 
+function cancel() {
+  if (window.history.state && window.history.state.back) {
+    router.back()
+  } else {
+    router.push({ name: "stores" })
+  }
+}
+
 function cancelReview() {
   error.value = ""
   confirming.value = false
@@ -134,7 +142,7 @@ onMounted(load)
       <div class="section-number">02</div>
       <div class="section-content">
         <h2>Accepted payment methods</h2>
-        <p class="section-note">Leave anything you are unsure about as "Unknown".</p>
+        <p class="section-note">Leave anything you are unsure about as "?".</p>
         <div v-if="loading" class="loading-box">Loading payment methods…</div>
         <PaymentMethodEditor v-else :methods="methods" :statuses="statuses" @update-status="updateStatus" />
       </div>
@@ -142,7 +150,7 @@ onMounted(load)
 
     <p v-if="error" class="alert error">{{ error }}</p>
     <div class="form-actions">
-      <RouterLink class="button secondary" to="/stores">Cancel</RouterLink>
+      <button class="button secondary" type="button" @click="cancel">Cancel</button>
       <button class="button primary" type="submit" :disabled="!canReview">Review this store</button>
     </div>
   </form>
@@ -178,7 +186,6 @@ onMounted(load)
           <div v-for="method in methods" :key="method.id" class="method-edit-row">
             <div>
               <strong>{{ method.name }}</strong>
-              <small>{{ method.code }}</small>
             </div>
             <span :class="['review-status', statuses[method.id]]">{{ statusLabels[statuses[method.id]] }}</span>
           </div>

@@ -51,7 +51,7 @@ async function handlePhoto(event) {
 <template>
   <section class="hero">
     <div class="hero-copy">
-      <h1><span style="white-space: nowrap">Search payment methods</span><br>by store name.</h1>
+      <h1><span style="white-space: nowrap">Search payment methods</span><br>by store name</h1>
       <form class="search-panel" @submit.prevent="search">
         <label class="visually-hidden" for="home-store-search">Store name or address</label>
         <div class="search-row">
@@ -81,9 +81,9 @@ async function handlePhoto(event) {
       </form>
       <p v-if="ocrLoading" class="ocr-status">Reading text from photo…</p>
       <p v-else-if="ocrError" class="ocr-status ocr-status-error">{{ ocrError }}</p>
-      <p class="lead">Please add store information <br class="mobile-break">for everyone.</p>
+      <RouterLink class="button secondary nearby-link" to="/stores/nearby">Find nearby registered stores</RouterLink>
+      <p class="lead">Please add store information <br class="mobile-break">for everyone</p>
       <div class="hero-actions">
-        <RouterLink class="button secondary" to="/stores/nearby">Nearby registered stores</RouterLink>
         <RouterLink class="button secondary" to="/stores/new">Add a new store</RouterLink>
       </div>
       <p v-if="storeCount !== null" class="record-count"><strong>{{ storeCount }}</strong> stores listed</p>
@@ -109,5 +109,6 @@ async function handlePhoto(event) {
 .search-outer-icon:disabled { opacity: .5; cursor: not-allowed; }
 .ocr-status { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
 .ocr-status-error { color: var(--red); }
+.nearby-link { margin-top: 8px; margin-bottom: 26px; }
 </style>
 
