@@ -12,7 +12,12 @@ const showHeaderActions = computed(
 )
 
 const showMainNav = computed(
-  () => route.name !== "home" && route.name !== "store-new" && route.name !== "stores"
+  () =>
+    route.name !== "home" &&
+    route.name !== "store-new" &&
+    route.name !== "stores" &&
+    route.name !== "stores-nearby" &&
+    route.name !== "store-detail"
 )
 
 const userPoints = ref(null)
