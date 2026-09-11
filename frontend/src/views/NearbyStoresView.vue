@@ -72,7 +72,7 @@ async function load() {
       getCurrentLocation(),
     ])
 
-    stores.value = storeData
+    stores.value = storeData.results
     currentLocation.value = location
   } catch (err) {
     if (err?.code === 1) {
