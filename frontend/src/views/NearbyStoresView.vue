@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue"
 import StoreMap from "../components/StoreMap.vue"
-import { apiErrorMessage, listStores } from "../api"
+import { apiErrorMessage, nearbyRegisteredStores } from "../api"
 
 const stores = ref([])
 const currentLocation = ref(null)
@@ -67,13 +67,14 @@ async function load() {
   error.value = ""
 
   try {
-    const [storeData, location] = await Promise.all([
-      listStores(),
-      getCurrentLocation(),
-    ])
-
-    stores.value = storeData.results
+    const location = await getCurrentLocation()
     currentLocation.value = location
+
+    stores.value = await nearbyRegisteredStores({
+      latitude: location.latitude,
+      longitude: location.longitude,
+      radius: NEARBY_RADIUS_METERS,
+    })
   } catch (err) {
     if (err?.code === 1) {
       error.value = "Location permission was denied."

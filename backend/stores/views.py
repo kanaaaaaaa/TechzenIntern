@@ -1,4 +1,5 @@
 import json
+import math
 from urllib import error as urllib_error
 from urllib import request as urllib_request
 
@@ -339,6 +340,65 @@ class StoreViewSet(viewsets.ModelViewSet):
                 )
             )
         return queryset
+
+    @action(detail=False, methods=["get"])
+    def nearby(self, request):
+        try:
+            latitude = float(request.query_params["latitude"])
+            longitude = float(request.query_params["longitude"])
+            radius = float(request.query_params.get("radius", 1000))
+        except (KeyError, TypeError, ValueError):
+            raise ValidationError(
+                {"detail": "latitude, longitude, and radius must be valid numbers."}
+            )
+
+        radius = min(max(radius, 1), 5000)
+        lat_delta = radius / 111320
+        lng_delta = radius / (
+            111320 * max(math.cos(math.radians(latitude)), 0.01)
+        )
+
+        candidates = Store.objects.filter(
+            latitude__isnull=False,
+            longitude__isnull=False,
+            latitude__gte=latitude - lat_delta,
+            latitude__lte=latitude + lat_delta,
+            longitude__gte=longitude - lng_delta,
+            longitude__lte=longitude + lng_delta,
+        )
+
+        stores = []
+        for store in candidates:
+            store_latitude = float(store.latitude)
+            store_longitude = float(store.longitude)
+
+            lat1 = math.radians(latitude)
+            lat2 = math.radians(store_latitude)
+            delta_lat = math.radians(store_latitude - latitude)
+            delta_lng = math.radians(store_longitude - longitude)
+
+            a = (
+                math.sin(delta_lat / 2) ** 2
+                + math.cos(lat1)
+                * math.cos(lat2)
+                * math.sin(delta_lng / 2) ** 2
+            )
+
+            distance = 6371000 * 2 * math.atan2(
+                math.sqrt(a),
+                math.sqrt(max(0, 1 - a)),
+            )
+
+            if distance <= radius:
+                stores.append({
+                    "id": store.id,
+                    "name": store.name,
+                    "address": store.address,
+                    "latitude": str(store.latitude),
+                    "longitude": str(store.longitude),
+                })
+
+        return Response(stores)
 
     @action(detail=True, methods=["post"])
     def feedback(self, request, pk=None):

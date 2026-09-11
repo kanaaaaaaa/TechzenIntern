@@ -45,6 +45,8 @@ export const getUserPoints = () =>
 
 export const listStores = (params = {}) =>
   api.get("/stores/", { params }).then((response) => response.data)
+export const nearbyRegisteredStores = (params) =>
+  api.get("/stores/nearby/", { params }).then((response) => response.data)
 
 export const nearbyPlaces = (payload) =>
   api
