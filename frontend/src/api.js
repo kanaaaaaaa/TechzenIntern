@@ -18,10 +18,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // An expired or invalid token means the password has to be entered again.
+    // An expired or invalid token means the user has to log in again to use
+    // account features, but browsing the app itself never requires login,
+    // so this must not force-navigate away from the page they're on.
     if (error.response?.status === 401 || error.response?.status === 403) {
       clearToken()
-      if (window.location.pathname !== "/login") window.location.assign("/login")
     }
     return Promise.reject(error)
   },
