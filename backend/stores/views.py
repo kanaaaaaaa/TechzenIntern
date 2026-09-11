@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .access import issue_token, password_matches
-from .models import PaymentMethod, Store, StoreComment, StoreFeedback, StorePaymentMethod
+from .models import PaymentMethod, Store, StoreComment, StoreFeedback, StorePaymentMethod, UserPoints
 from .serializers import PaymentMethodSerializer, StoreCommentSerializer, StoreSerializer
 from rest_framework.decorators import action
 
@@ -89,6 +89,12 @@ class AccountView(APIView):
         })
 
 
+class UserPointsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        points, _ = UserPoints.objects.get_or_create(user=request.user)
+        return Response({"total_points": points.total_points})
 class NearbyPlacesView(APIView):
     permission_classes = [AllowAny]
 

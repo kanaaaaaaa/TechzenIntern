@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue"
+import { computed, inject, onMounted, reactive, ref } from "vue"
 import { useRouter } from "vue-router"
 
 import PaymentMethodEditor from "../components/PaymentMethodEditor.vue"
@@ -7,6 +7,7 @@ import StorePickerMap from "../components/StorePickerMap.vue"
 import { apiErrorMessage, createStore, listPaymentMethods } from "../api"
 
 const router = useRouter()
+const refreshUserPoints = inject("refreshUserPoints")
 const methods = ref([])
 const statuses = reactive({})
 const form = reactive({ name: "", address: "", latitude: "", longitude: "" })
@@ -95,6 +96,7 @@ async function save() {
         status: statuses[method.id],
       })),
     })
+    refreshUserPoints?.()
     await router.push({ name: "stores" })
   } catch (err) {
     error.value = apiErrorMessage(err)

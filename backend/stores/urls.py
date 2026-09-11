@@ -11,6 +11,7 @@ from .views import (
     PaymentMethodViewSet,
     RegisterView,
     StoreViewSet,
+    UserPointsView,
 )
 
 router = DefaultRouter()
@@ -22,6 +23,6 @@ urlpatterns = [
     path("auth/login/", LoginView.as_view(), name="login"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
     path("auth/me/", AccountView.as_view(), name="account"),
-    path("places/nearby/", NearbyPlacesView.as_view(), name="places-nearby"),
+    path("user/points/", UserPointsView.as_view(), name="user-points"),
     path("ocr/", OcrView.as_view(), name="ocr"),
 ] + router.urls

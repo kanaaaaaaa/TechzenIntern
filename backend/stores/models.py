@@ -163,3 +163,20 @@ class StorePaymentMethod(models.Model):
 
     def __str__(self):
         return f"{self.store} - {self.payment_method}: {self.get_status_display()}"
+
+
+class UserPoints(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        related_name="points",
+        on_delete=models.CASCADE,
+    )
+    total_points = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-total_points"]
+
+    def __str__(self):
+        return f"{self.user.username}: {self.total_points}p"
