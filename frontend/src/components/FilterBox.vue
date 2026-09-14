@@ -6,18 +6,24 @@ const props = defineProps({
   paymentMethods: { type: Array, default: () => [] },
   selectedPaymentMethods: { type: Array, required: true },
   selectedCategories: { type: Array, required: true },
+  sortOptions: { type: Array, default: () => [] },
+  selectedSort: { type: String, default: "" },
 })
 
 const emit = defineEmits([
   "update:selectedPaymentMethods",
   "update:selectedCategories",
+  "update:selectedSort",
   "apply",
 ])
 
 const detailsRef = ref(null)
 
 const activeCount = computed(
-  () => props.selectedPaymentMethods.length + props.selectedCategories.length
+  () =>
+    props.selectedPaymentMethods.length +
+    props.selectedCategories.length +
+    (props.selectedSort ? 1 : 0)
 )
 
 function togglePaymentMethod(id) {
@@ -52,6 +58,7 @@ function apply() {
 function clear() {
   emit("update:selectedPaymentMethods", [])
   emit("update:selectedCategories", [])
+  emit("update:selectedSort", "")
   emit("apply")
   close()
 }
@@ -110,6 +117,25 @@ function clear() {
               @change="toggleCategory(cat.value)"
             >
             <span>{{ cat.label }}</span>
+          </label>
+        </div>
+      </div>
+
+      <div v-if="sortOptions.length" class="filter-section">
+        <div class="filter-section-title">Sort</div>
+        <div class="filter-checkbox-grid">
+          <label
+            v-for="opt in sortOptions"
+            :key="opt.value"
+            class="filter-checkbox-option"
+          >
+            <input
+              type="radio"
+              name="filter-sort"
+              :checked="selectedSort === opt.value"
+              @change="emit('update:selectedSort', opt.value)"
+            >
+            <span>{{ opt.label }}</span>
           </label>
         </div>
       </div>

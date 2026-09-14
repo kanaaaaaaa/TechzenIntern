@@ -19,7 +19,6 @@ const saving = ref(false)
 const error = ref("")
 const notice = ref(route.query.created ? "The store has been added." : "")
 
-const confirmedCount = computed(() => Object.values(statuses).filter((status) => status !== "unknown").length)
 const listRoute = computed(() => ({
   name: "stores",
   query: route.query.q ? { q: String(route.query.q) } : {},
@@ -86,17 +85,15 @@ onMounted(load)
     <div class="breadcrumb"><RouterLink :to="listRoute">Stores</RouterLink><span>/</span><span>{{ store.name }}</span></div>
     <section class="detail-heading">
       <div>
-        <p class="eyebrow">STORE #{{ store.id }}</p>
         <h1>{{ store.name }}</h1>
         <p>{{ store.address || "No address yet" }}</p>
         <p v-if="store.latitude !== null && store.longitude !== null">{{ store.latitude }}, {{ store.longitude }}</p>
       </div>
-      <div class="confirm-stat"><strong>{{ confirmedCount }}</strong><span>/ {{ methods.length }} confirmed</span></div>
     </section>
 
     <form class="editor-form" @submit.prevent="save">
       <section class="form-section compact">
-        <div class="section-number">01</div>
+        <div class="section-number">1</div>
         <div class="section-content">
           <h2>Store details</h2>
           <div class="field-grid">
@@ -115,7 +112,7 @@ onMounted(load)
       </section>
 
       <section class="form-section compact">
-        <div class="section-number">02</div>
+        <div class="section-number">2</div>
         <div class="section-content">
           <h2>Payment methods</h2>
           <p class="section-note">Pick the current status for each method and save.</p>

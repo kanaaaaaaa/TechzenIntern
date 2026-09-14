@@ -23,6 +23,13 @@ const query = ref(String(route.query.q || ""))
 const paymentMethods = ref([])
 const selectedMethods = ref([])
 const selectedCategories = ref([])
+const selectedSort = ref("")
+
+const SORT_OPTIONS = [
+  { value: "helpful_desc", label: "Most Good votes" },
+  { value: "not_helpful_desc", label: "Most Bad votes" },
+  { value: "comments_desc", label: "Most comments" },
+]
 const stores = ref([])
 const totalCount = ref(0)
 const nextPageUrl = ref(null)
@@ -59,7 +66,6 @@ async function search() {
   try {
     const params = {
       search: query.value.trim(),
-      ordering: "-updated_at",
     }
 
     if (selectedMethods.value.length > 0) {
@@ -69,6 +75,10 @@ async function search() {
 
     if (selectedCategories.value.length > 0) {
       params.categories = selectedCategories.value.join(",")
+    }
+
+    if (selectedSort.value) {
+      params.sort = selectedSort.value
     }
 
     const data = await listStores(params)
@@ -81,6 +91,7 @@ async function search() {
     if (query.value.trim()) newQuery.q = query.value.trim()
     if (selectedMethods.value.length > 0) newQuery.methods = selectedMethods.value.join(",")
     if (selectedCategories.value.length > 0) newQuery.categories = selectedCategories.value.join(",")
+    if (selectedSort.value) newQuery.sort = selectedSort.value
 
     await router.replace({
       name: "stores",
@@ -107,6 +118,9 @@ async function loadMore() {
     }
     if (selectedCategories.value.length > 0) {
       url.searchParams.set("categories", selectedCategories.value.join(","))
+    }
+    if (selectedSort.value) {
+      url.searchParams.set("sort", selectedSort.value)
     }
     const response = await api.get(url.toString())
     stores.value = [...stores.value, ...response.data.results]
@@ -296,6 +310,11 @@ onMounted(async () => {
     selectedCategories.value = String(categoriesParam).split(",").filter(Boolean)
   }
 
+  const sortParam = route.query.sort
+  if (sortParam && SORT_OPTIONS.some((opt) => opt.value === sortParam)) {
+    selectedSort.value = String(sortParam)
+  }
+
   search()
 })
 </script>
@@ -322,6 +341,8 @@ onMounted(async () => {
     :payment-methods="paymentMethods"
     v-model:selected-payment-methods="selectedMethods"
     v-model:selected-categories="selectedCategories"
+    :sort-options="SORT_OPTIONS"
+    v-model:selected-sort="selectedSort"
     @apply="search"
   />
 
