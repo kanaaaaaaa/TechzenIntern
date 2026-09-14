@@ -374,7 +374,7 @@ class StoreViewSet(viewsets.ModelViewSet):
             latitude__lte=latitude + lat_delta,
             longitude__gte=longitude - lng_delta,
             longitude__lte=longitude + lng_delta,
-        )
+        ).prefetch_related("payment_methods__payment_method")
 
         payment_methods_param = request.query_params.get("payment_methods")
 
@@ -427,6 +427,16 @@ class StoreViewSet(viewsets.ModelViewSet):
                     "address": store.address,
                     "latitude": str(store.latitude),
                     "longitude": str(store.longitude),
+                    "payment_methods": [
+                        {
+                            "payment_method": {
+                                "id": item.payment_method.id,
+                                "name": item.payment_method.name,
+                            },
+                            "status": item.status,
+                        }
+                        for item in store.payment_methods.all()
+                    ],
                 })
 
         return Response(stores)

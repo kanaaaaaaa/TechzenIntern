@@ -16,6 +16,12 @@ const props = defineProps({
   },
 })
 
+const statusSymbols = {
+  accepted: "〇",
+  not_accepted: "×",
+  unknown: "？",
+}
+
 const mapElement = ref(null)
 const mapError = ref("")
 
@@ -27,28 +33,35 @@ let currentLocationMarker = null
 let markers = []
 
 function hasLocation(store) {
-  return store.latitude !== null && store.latitude !== undefined &&
-    store.longitude !== null && store.longitude !== undefined &&
-    Number.isFinite(Number(store.latitude)) && Number.isFinite(Number(store.longitude))
+  return store.latitude !== null &&
+    store.latitude !== undefined &&
+    store.longitude !== null &&
+    store.longitude !== undefined &&
+    Number.isFinite(Number(store.latitude)) &&
+    Number.isFinite(Number(store.longitude))
 }
 
 function clearMarkers() {
-  markers.forEach((marker) => { marker.map = null })
+  markers.forEach((marker) => {
+    marker.map = null
+  })
   markers = []
 }
 
 function openStoreInfo(marker, store) {
   const content = document.createElement("div")
-  content.style.padding = "4px"
+  content.style.padding = "0 4px 4px"
 
   const name = document.createElement("button")
   name.type = "button"
   name.textContent = store.name
   name.style.border = "0"
   name.style.padding = "0"
+  name.style.margin = "0"
   name.style.background = "transparent"
   name.style.fontWeight = "700"
-  name.style.fontSize = "15px"
+  name.style.fontSize = "18px"
+  name.style.lineHeight = "1.2"
   name.style.cursor = "pointer"
   name.style.textDecoration = "underline"
 
@@ -61,8 +74,28 @@ function openStoreInfo(marker, store) {
 
   content.appendChild(name)
 
+  if (store.payment_methods?.length) {
+    const methods = document.createElement("div")
+    methods.className = "method-tags"
+    methods.style.marginTop = "8px"
+
+    store.payment_methods.forEach((item) => {
+      const tag = document.createElement("span")
+      tag.className = item.status
+      tag.textContent =
+        `${statusSymbols[item.status] || "？"}｜${item.payment_method.name}`
+
+      methods.appendChild(tag)
+    })
+
+    content.appendChild(methods)
+  }
+
   infoWindow.setContent(content)
-  infoWindow.open({ map, anchor: marker })
+  infoWindow.open({
+    map,
+    anchor: marker,
+  })
 }
 
 function drawCurrentLocation() {
@@ -95,8 +128,12 @@ function drawCurrentLocation() {
   currentLocationMarker.addListener("click", () => {
     const content = document.createElement("strong")
     content.textContent = "Your current location"
+
     infoWindow.setContent(content)
-    infoWindow.open({ map, anchor: currentLocationMarker })
+    infoWindow.open({
+      map,
+      anchor: currentLocationMarker,
+    })
   })
 }
 
@@ -108,7 +145,8 @@ function fitCurrentArea() {
   const radius = 100
 
   const latitudeDelta = radius / 111320
-  const longitudeDelta = radius / (111320 * Math.cos(latitude * Math.PI / 180))
+  const longitudeDelta =
+    radius / (111320 * Math.cos(latitude * Math.PI / 180))
 
   map.fitBounds({
     north: latitude + latitudeDelta,
@@ -135,7 +173,10 @@ function drawMarkers() {
       title: store.name,
     })
 
-    marker.addListener("click", () => openStoreInfo(marker, store))
+    marker.addListener("click", () => {
+      openStoreInfo(marker, store)
+    })
+
     markers.push(marker)
   })
 
@@ -153,8 +194,14 @@ async function initializeMap() {
     infoWindow = new mapsLibrary.InfoWindow()
 
     const center = props.currentLocation
-      ? { lat: props.currentLocation.latitude, lng: props.currentLocation.longitude }
-      : { lat: 16.0544, lng: 108.2022 }
+      ? {
+          lat: props.currentLocation.latitude,
+          lng: props.currentLocation.longitude,
+        }
+      : {
+          lat: 16.0544,
+          lng: 108.2022,
+        }
 
     map = new mapsLibrary.Map(mapElement.value, {
       center,
@@ -176,8 +223,14 @@ onMounted(initializeMap)
 </script>
 
 <template>
-  <p v-if="mapError" class="alert error">{{ mapError }}</p>
-  <div ref="mapElement" class="nearby-map" />
+  <p v-if="mapError" class="alert error">
+    {{ mapError }}
+  </p>
+
+  <div
+    ref="mapElement"
+    class="nearby-map"
+  />
 </template>
 
 <style scoped>
@@ -186,6 +239,10 @@ onMounted(initializeMap)
   height: 620px;
   border-radius: 12px;
   overflow: hidden;
+}
+
+:global(.gm-style-iw-chr) {
+  height: 20px;
 }
 
 @media (max-width: 800px) {
