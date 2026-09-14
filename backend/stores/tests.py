@@ -11,7 +11,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .access import issue_token
-from .models import PaymentMethod, Store, StorePaymentMethod
+from .models import PaymentMethod, Store, StorePaymentMethod, UserPoints
 
 
 class UnlockedApiTestCase(APITestCase):
@@ -42,6 +42,7 @@ class StoreApiTests(UnlockedApiTestCase):
             },
         )
         store_id = create_response.data["id"]
+        self.assertEqual(create_response.data["points_awarded"], 3)
         relation = StorePaymentMethod.objects.get(store_id=store_id, payment_method=method)
         self.assertEqual(relation.status, StorePaymentMethod.Status.ACCEPTED)
         self.assertIsNotNone(relation.confirmed_at)
@@ -51,6 +52,7 @@ class StoreApiTests(UnlockedApiTestCase):
             {"payment_statuses": [{"payment_method_id": method.id, "status": "not_accepted"}]},
         )
         self.assertEqual(update_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(update_response.data["points_awarded"], 1)
         relation.refresh_from_db()
         self.assertEqual(relation.status, StorePaymentMethod.Status.NOT_ACCEPTED)
 
@@ -116,6 +118,26 @@ class StoreApiTests(UnlockedApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Store.objects.filter(id=store.id).exists())
         self.assertFalse(StorePaymentMethod.objects.filter(id=relation.id).exists())
+
+    def test_create_and_update_awards_points_to_authenticated_user(self):
+        user = User.objects.create_user(username="pointuser")
+        self.client.force_authenticate(user=user)
+
+        # 3 points for creating a store
+        response = self.client.post(reverse("store-list"), {"name": "Points Store", "address": "Tokyo"})
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["points_awarded"], 3)
+        user_points = UserPoints.objects.get(user=user)
+        self.assertEqual(user_points.total_points, 3)
+
+        # 1 point for editing a store
+        store_id = response.data["id"]
+        update_response = self.client.patch(reverse("store-detail", args=[store_id]), {"address": "Updated Tokyo"})
+        self.assertEqual(update_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(update_response.data["points_awarded"], 1)
+        user_points.refresh_from_db()
+        self.assertEqual(user_points.total_points, 4)
+
 
 
 class StoreDuplicateTests(UnlockedApiTestCase):

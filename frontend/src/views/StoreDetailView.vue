@@ -1,8 +1,9 @@
 <script setup>
-import { computed, inject, onMounted, reactive, ref } from "vue"
+import { computed, inject, onBeforeUnmount, onMounted, reactive, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 import PaymentMethodEditor from "../components/PaymentMethodEditor.vue"
+import PointsRewardOverlay from "../components/PointsRewardOverlay.vue"
 import { STORE_CATEGORIES } from "../categories"
 import { apiErrorMessage, getStore, listPaymentMethods, updateStore } from "../api"
 
@@ -18,6 +19,19 @@ const loading = ref(true)
 const saving = ref(false)
 const error = ref("")
 const notice = ref(route.query.created ? "The store has been added." : "")
+const pointsEarned = ref(0)
+const showingPoints = ref(false)
+let pointsTimer
+
+function showPoints(points, after) {
+  if (pointsTimer) window.clearTimeout(pointsTimer)
+  pointsEarned.value = points
+  showingPoints.value = true
+  pointsTimer = window.setTimeout(() => {
+    showingPoints.value = false
+    after()
+  }, 1500)
+}
 
 const listRoute = computed(() => ({
   name: "stores",
@@ -58,7 +72,7 @@ async function save() {
   error.value = ""
   notice.value = ""
   try {
-    store.value = await updateStore(props.id, {
+    const updated = await updateStore(props.id, {
       name: form.name.trim(),
       address: form.address.trim(),
       latitude: optionalCoordinate(form.latitude),
@@ -66,8 +80,9 @@ async function save() {
       category: form.category,
       payment_statuses: methods.value.map((method) => ({ payment_method_id: method.id, status: statuses[method.id] })),
     })
+    store.value = updated
     refreshUserPoints?.()
-    await router.push(listRoute.value)
+    showPoints(updated?.points_awarded || 1, () => router.push({ name: "home" }))
   } catch (err) {
     error.value = apiErrorMessage(err)
   } finally {
@@ -76,9 +91,15 @@ async function save() {
 }
 
 onMounted(load)
+
+onBeforeUnmount(() => {
+  if (pointsTimer) window.clearTimeout(pointsTimer)
+})
 </script>
 
 <template>
+  <PointsRewardOverlay v-if="showingPoints" :points="pointsEarned" />
+
   <div v-if="loading" class="empty-state">Loading store details…</div>
   <div v-else-if="!store" class="empty-state"><h1>This store cannot be shown</h1><p>{{ error }}</p><RouterLink class="button primary" :to="listRoute">Back to the list</RouterLink></div>
   <template v-else>
