@@ -73,6 +73,26 @@ function openStoreInfo(marker, store) {
   })
 
   content.appendChild(name)
+  
+  if (store.category) {
+    const category = document.createElement("div")
+
+    category.textContent = store.category
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase())
+
+    category.style.display = "block"
+    category.style.width = "fit-content"
+    category.style.marginTop = "8px"
+    category.style.padding = "3px 8px"
+    category.style.borderRadius = "4px"
+    category.style.background = "#eef5ef"
+    category.style.color = "#2f6f50"
+    category.style.fontSize = "11px"
+    category.style.fontWeight = "700"
+
+    content.appendChild(category)
+  }
 
   if (store.payment_methods?.length) {
     const methods = document.createElement("div")
