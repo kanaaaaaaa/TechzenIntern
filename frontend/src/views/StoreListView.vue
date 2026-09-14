@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
-import CategoryFilterBox from "../components/CategoryFilterBox.vue"
+import FilterBox from "../components/FilterBox.vue"
 import {
   api,
   apiErrorMessage,
@@ -21,7 +21,7 @@ const router = useRouter()
 
 const query = ref(String(route.query.q || ""))
 const paymentMethods = ref([])
-const selectedMethods = ref(new Set())
+const selectedMethods = ref([])
 const selectedCategories = ref([])
 const stores = ref([])
 const totalCount = ref(0)
@@ -62,8 +62,8 @@ async function search() {
       ordering: "-updated_at",
     }
 
-    if (selectedMethods.value.size > 0) {
-      params.payment_methods = Array.from(selectedMethods.value).join(",")
+    if (selectedMethods.value.length > 0) {
+      params.payment_methods = selectedMethods.value.join(",")
       params.payment_method_status = "accepted"
     }
 
@@ -79,7 +79,7 @@ async function search() {
 
     const newQuery = {}
     if (query.value.trim()) newQuery.q = query.value.trim()
-    if (selectedMethods.value.size > 0) newQuery.methods = Array.from(selectedMethods.value).join(",")
+    if (selectedMethods.value.length > 0) newQuery.methods = selectedMethods.value.join(",")
     if (selectedCategories.value.length > 0) newQuery.categories = selectedCategories.value.join(",")
 
     await router.replace({
@@ -101,8 +101,8 @@ async function loadMore() {
 
   try {
     const url = new URL(nextPageUrl.value, window.location.origin)
-    if (selectedMethods.value.size > 0) {
-      url.searchParams.set("payment_methods", Array.from(selectedMethods.value).join(","))
+    if (selectedMethods.value.length > 0) {
+      url.searchParams.set("payment_methods", selectedMethods.value.join(","))
       url.searchParams.set("payment_method_status", "accepted")
     }
     if (selectedCategories.value.length > 0) {
@@ -125,22 +125,6 @@ async function loadPaymentMethods() {
   } catch (err) {
     console.error("Failed to load payment methods:", err)
   }
-}
-
-function toggleMethod(methodId) {
-  const newSet = new Set(selectedMethods.value)
-  if (newSet.has(methodId)) {
-    newSet.delete(methodId)
-  } else {
-    newSet.add(methodId)
-  }
-  selectedMethods.value = newSet
-  search()
-}
-
-function clearFilters() {
-  selectedMethods.value.clear()
-  search()
 }
 
 function requireLogin() {
@@ -304,8 +288,7 @@ onMounted(async () => {
 
   const methodsParam = route.query.methods
   if (methodsParam) {
-    const methodIds = String(methodsParam).split(",").map(Number).filter(Boolean)
-    methodIds.forEach((id) => selectedMethods.value.add(id))
+    selectedMethods.value = String(methodsParam).split(",").map(Number).filter(Boolean)
   }
 
   const categoriesParam = route.query.categories
@@ -335,35 +318,12 @@ onMounted(async () => {
     </div>
   </form>
 
-  <div v-if="paymentMethods.length" class="method-filter">
-    <div class="method-filter-label">Filter by payment method:</div>
-    <div class="method-filter-buttons">
-      <button
-        v-for="method in paymentMethods"
-        :key="method.id"
-        type="button"
-        class="method-filter-button"
-        :class="{ active: selectedMethods.has(method.id) }"
-        @click="toggleMethod(method.id)"
-        :aria-pressed="selectedMethods.has(method.id)"
-      >
-        {{ method.name }}
-      </button>
-      <button
-        v-if="selectedMethods.size > 0"
-        type="button"
-        class="method-filter-button clear"
-        @click="clearFilters"
-      >
-        Clear
-      </button>
-    </div>
-
-    <CategoryFilterBox
-      v-model="selectedCategories"
-      @update:model-value="search"
-    />
-  </div>
+  <FilterBox
+    :payment-methods="paymentMethods"
+    v-model:selected-payment-methods="selectedMethods"
+    v-model:selected-categories="selectedCategories"
+    @apply="search"
+  />
 
   <div class="result-head">
     <strong>{{ resultLabel }}</strong>
@@ -392,7 +352,7 @@ onMounted(async () => {
         }"
       >
         <div class="store-card-top">
-          <div>
+          <div class="store-card-info">
             <h2>{{ store.name }}</h2>
 
             <div
@@ -429,8 +389,19 @@ onMounted(async () => {
               {{ store.latitude }}, {{ store.longitude }}
             </p>
           </div>
+        </div>
+      </RouterLink>
 
-          <span class="arrow" aria-label="Edit">
+      <div class="store-card-foot">
+        <div class="store-card-meta">
+          <RouterLink
+            class="foot-edit-link"
+            :to="{
+              name: 'store-detail',
+              params: { id: store.id },
+              query: query.trim() ? { q: query.trim() } : {}
+            }"
+          >
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -445,32 +416,13 @@ onMounted(async () => {
               />
             </svg>
 
-            <span class="edit-label">
-              Edit
-            </span>
-          </span>
-        </div>
-      </RouterLink>
+            Edit
+          </RouterLink>
 
-      <div class="store-card-foot">
-        <div class="store-card-meta">
-          <span>
-            Updated
-            {{ new Date(store.updated_at).toLocaleDateString("en-US") }}
+          <span class="foot-updated">
+            (Last updated
+            {{ new Date(store.updated_at).toLocaleDateString("en-US") }})
           </span>
-
-          <button
-            class="store-delete-button"
-            type="button"
-            :disabled="deletingId !== null"
-            @click="removeStore(store)"
-          >
-            {{
-              deletingId === store.id
-                ? "Deleting…"
-                : "Delete"
-            }}
-          </button>
         </div>
 
         <div class="store-feedback">
@@ -648,6 +600,20 @@ onMounted(async () => {
                     class="comment-edit-button"
                     @click="startEditComment(comment)"
                   >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M12 20h9" />
+                      <path
+                        d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"
+                      />
+                    </svg>
+
                     Edit
                   </button>
                 </div>

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue"
 import StoreMap from "../components/StoreMap.vue"
-import CategoryFilterBox from "../components/CategoryFilterBox.vue"
+import FilterBox from "../components/FilterBox.vue"
 import { apiErrorMessage, nearbyRegisteredStores, listPaymentMethods } from "../api"
 
 const stores = ref([])
@@ -86,21 +86,7 @@ async function fetchNearbyStores() {
   stores.value = await nearbyRegisteredStores(params)
 }
 
-async function applyPaymentFilters() {
-  try {
-    error.value = ""
-    await fetchNearbyStores()
-  } catch (err) {
-    error.value = apiErrorMessage(err)
-  }
-}
-
-async function clearPaymentFilters() {
-  selectedPaymentMethodIds.value = []
-  await applyPaymentFilters()
-}
-
-async function applyCategoryFilters() {
+async function applyFilters() {
   try {
     error.value = ""
     await fetchNearbyStores()
@@ -152,48 +138,11 @@ onMounted(load)
     <p v-else-if="error" class="alert error">{{ error }}</p>
 
     <template v-else>
-      <div class="payment-filter">
-        <div class="payment-filter-title">
-          Filter by payment method
-        </div>
-
-        <div class="payment-options">
-          <label
-            v-for="method in paymentMethods"
-            :key="method.id"
-            class="payment-option"
-          >
-            <input
-              v-model="selectedPaymentMethodIds"
-              type="checkbox"
-              :value="method.id"
-            >
-            <span>{{ method.name }}</span>
-          </label>
-        </div>
-
-        <div class="filter-actions">
-          <button
-            type="button"
-            class="button secondary"
-            @click="applyPaymentFilters"
-          >
-            Apply
-          </button>
-
-          <button
-            type="button"
-            class="button secondary"
-            @click="clearPaymentFilters"
-          >
-            Clear
-          </button>
-        </div>
-      </div>
-
-      <CategoryFilterBox
-        v-model="selectedCategories"
-        @update:model-value="applyCategoryFilters"
+      <FilterBox
+        :payment-methods="paymentMethods"
+        v-model:selected-payment-methods="selectedPaymentMethodIds"
+        v-model:selected-categories="selectedCategories"
+        @apply="applyFilters"
       />
 
       <StoreMap
@@ -214,48 +163,7 @@ onMounted(load)
 <style scoped>
 .nearby-page {
   width: 100%;
-}
-
-.payment-filter {
-  margin-bottom: 20px;
-  padding: 16px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-}
-
-.payment-filter-title {
-  font-weight: 700;
-  margin-bottom: 12px;
-}
-
-.payment-options {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 24px;
-  overflow-x: auto;
-}
-
-.payment-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-}
-
-.payment-option input[type="checkbox"] {
-  width: 18px !important;
-  height: 18px !important;
-  min-width: 18px;
-  margin: 0;
-  padding: 0;
-  flex: 0 0 18px;
-}
-
-.filter-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 16px;
+  padding-top: 24px;
 }
 
 .nearby-actions {
