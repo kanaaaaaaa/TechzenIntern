@@ -11,6 +11,38 @@ def normalize(value):
 
 
 class Store(models.Model):
+    class Category(models.TextChoices):
+        RESTAURANT = "restaurant", "Restaurant"
+        CAFE = "cafe", "Cafe"
+        COFFEE_SHOP = "coffee_shop", "Coffee shop"
+        BAKERY = "bakery", "Bakery"
+        BAR = "bar", "Bar"
+        MEAL_TAKEAWAY = "meal_takeaway", "Meal takeaway"
+        FOOD_COURT = "food_court", "Food court"
+        DESSERT_SHOP = "dessert_shop", "Dessert shop"
+        ICE_CREAM_SHOP = "ice_cream_shop", "Ice cream shop"
+        CONVENIENCE_STORE = "convenience_store", "Convenience store"
+        SUPERMARKET = "supermarket", "Supermarket"
+        GROCERY_STORE = "grocery_store", "Grocery store"
+        DEPARTMENT_STORE = "department_store", "Department store"
+        SHOPPING_MALL = "shopping_mall", "Shopping mall"
+        STORE = "store", "Store"
+        MARKET = "market", "Market"
+        PHARMACY = "pharmacy", "Pharmacy"
+        DRUGSTORE = "drugstore", "Drugstore"
+        GAS_STATION = "gas_station", "Gas station"
+        PARKING = "parking", "Parking"
+        HOTEL = "hotel", "Hotel"
+        LODGING = "lodging", "Lodging"
+        MOVIE_THEATER = "movie_theater", "Movie theater"
+        BEAUTY_SALON = "beauty_salon", "Beauty salon"
+        HAIR_SALON = "hair_salon", "Hair salon"
+        BARBER_SHOP = "barber_shop", "Barber shop"
+        NAIL_SALON = "nail_salon", "Nail salon"
+        LAUNDRY = "laundry", "Laundry"
+        SPA = "spa", "Spa"
+        GYM = "gym", "Gym"
+
     name = models.CharField(max_length=160)
     normalized_name = models.CharField(max_length=160, db_index=True, editable=False)
     address = models.CharField(max_length=255, blank=True)
@@ -29,6 +61,7 @@ class Store(models.Model):
         blank=True,
         validators=[MinValueValidator(-180), MaxValueValidator(180)],
     )
+    category = models.CharField(max_length=30, choices=Category.choices, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

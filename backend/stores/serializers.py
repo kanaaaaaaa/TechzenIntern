@@ -65,6 +65,7 @@ class StoreSerializer(serializers.ModelSerializer):
     not_helpful_count = serializers.SerializerMethodField()
     my_feedback = serializers.SerializerMethodField()
     comment_count = serializers.SerializerMethodField()
+    category_label = serializers.CharField(source="get_category_display", read_only=True)
 
     class Meta:
         model = Store
@@ -74,6 +75,8 @@ class StoreSerializer(serializers.ModelSerializer):
             "address",
             "latitude",
             "longitude",
+            "category",
+            "category_label",
             "payment_methods",
             "payment_statuses",
             "helpful_count",

@@ -4,13 +4,17 @@ import { useRouter } from "vue-router"
 
 import PaymentMethodEditor from "../components/PaymentMethodEditor.vue"
 import StorePickerMap from "../components/StorePickerMap.vue"
+import { STORE_CATEGORIES } from "../categories"
 import { apiErrorMessage, createStore, listPaymentMethods } from "../api"
 
 const router = useRouter()
 const refreshUserPoints = inject("refreshUserPoints")
 const methods = ref([])
 const statuses = reactive({})
-const form = reactive({ name: "", address: "", latitude: "", longitude: "" })
+const form = reactive({ name: "", address: "", latitude: "", longitude: "", category: "" })
+const categoryLabel = computed(
+  () => STORE_CATEGORIES.find((c) => c.value === form.category)?.label || "No category"
+)
 const loading = ref(true)
 const saving = ref(false)
 const confirming = ref(false)
@@ -99,6 +103,7 @@ async function save() {
       address: form.address.trim(),
       latitude: optionalCoordinate(form.latitude),
       longitude: optionalCoordinate(form.longitude),
+      category: form.category,
       payment_statuses: methods.value.map((method) => ({
         payment_method_id: method.id,
         status: statuses[method.id],
@@ -131,6 +136,12 @@ onMounted(load)
           <label>Address <small>Optional</small><input v-model="form.address" maxlength="255" placeholder="e.g. 1-2-3 Shibuya, Shibuya-ku, Tokyo"></label>
           <label>Latitude <small>Optional</small><input v-model="form.latitude" type="number" min="-90" max="90" step="0.000001" placeholder="e.g. 16.081259"></label>
           <label>Longitude <small>Optional</small><input v-model="form.longitude" type="number" min="-180" max="180" step="0.000001" placeholder="e.g. 108.222577"></label>
+          <label>Category <small>Optional</small>
+            <select v-model="form.category">
+              <option value="">No category</option>
+              <option v-for="cat in STORE_CATEGORIES" :key="cat.value" :value="cat.value">{{ cat.label }}</option>
+            </select>
+          </label>
         </div>
         <StorePickerMap
           @select-place="selectGooglePlace"
@@ -172,6 +183,10 @@ onMounted(load)
           <div>
             <dt>Coordinates</dt>
             <dd>{{ form.latitude !== "" && form.longitude !== "" ? `${form.latitude}, ${form.longitude}` : "No coordinates" }}</dd>
+          </div>
+          <div>
+            <dt>Category</dt>
+            <dd>{{ categoryLabel }}</dd>
           </div>
         </dl>
       </div>

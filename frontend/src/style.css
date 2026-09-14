@@ -77,9 +77,9 @@ a { color: inherit; }
 .search-panel { padding: 28px; background: #ffffff; border-radius: 9px; color: var(--ink); }
 .search-panel .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .search-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
-input { width: 100%; min-height: 50px; padding: 0 16px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); color: var(--ink); outline: none; }
+input, select { width: 100%; min-height: 50px; padding: 0 16px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); color: var(--ink); outline: none; }
 input::placeholder { color: var(--muted); }
-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(23, 107, 77, .12); }
+input:focus, select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(23, 107, 77, .12); }
 .search-row .button { border-color: var(--lime); background: var(--lime); color: var(--ink); }
 .result-head { margin-top: 6px; padding-bottom: 13px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--ink); font: 600 11px var(--mono); }
 
@@ -98,6 +98,7 @@ input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(23, 107, 77
 .store-card-link { display: block; padding: 8px 21px 18px; color: inherit; text-decoration: none; }
 .store-card-top { display: flex; justify-content: space-between; gap: 20px; }
 .store-card h2 { margin: 0; font-size: 20px; }
+.store-category-tag { display: inline-block; margin-top: 6px; padding: 3px 8px; border-radius: 3px; background: #eef1ec; color: var(--green); font: 600 10px var(--mono); letter-spacing: .04em; text-transform: uppercase; }
 .store-card p { margin: 7px 0 0; color: var(--muted); font-size: 12px; }
 .arrow {color: var(--green);display: inline-flex;align-items: center;gap: 6px;}
 .arrow svg {width: 24px;height: 24px;}
@@ -167,7 +168,7 @@ input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(23, 107, 77
   .site-header { padding: 0 20px; }
   .site-header nav {gap: 14px;}
   .site-header .nav-primary {display: none;}
-  .page-shell, .site-footer { width: min(100% - 32px, 1160px); }
+  .page-shell { width: min(100% - 32px, 1160px); }
   .hero { padding: 18px 0 70px; }
   .finder-card { width: min(100% - 20px, 450px); }
   .feature-grid, .store-grid { grid-template-columns: 1fr; }

@@ -3,6 +3,7 @@ import { computed, inject, onMounted, reactive, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 import PaymentMethodEditor from "../components/PaymentMethodEditor.vue"
+import { STORE_CATEGORIES } from "../categories"
 import { apiErrorMessage, getStore, listPaymentMethods, updateStore } from "../api"
 
 const props = defineProps({ id: { type: String, required: true } })
@@ -12,7 +13,7 @@ const refreshUserPoints = inject("refreshUserPoints")
 const store = ref(null)
 const methods = ref([])
 const statuses = reactive({})
-const form = reactive({ name: "", address: "", latitude: "", longitude: "" })
+const form = reactive({ name: "", address: "", latitude: "", longitude: "", category: "" })
 const loading = ref(true)
 const saving = ref(false)
 const error = ref("")
@@ -43,6 +44,7 @@ async function load() {
     form.address = storeData.address
     form.latitude = storeData.latitude ?? ""
     form.longitude = storeData.longitude ?? ""
+    form.category = storeData.category ?? ""
     methodData.forEach((method) => { statuses[method.id] = "unknown" })
     storeData.payment_methods.forEach((item) => { statuses[item.payment_method.id] = item.status })
   } catch (err) {
@@ -62,6 +64,7 @@ async function save() {
       address: form.address.trim(),
       latitude: optionalCoordinate(form.latitude),
       longitude: optionalCoordinate(form.longitude),
+      category: form.category,
       payment_statuses: methods.value.map((method) => ({ payment_method_id: method.id, status: statuses[method.id] })),
     })
     refreshUserPoints?.()
@@ -101,6 +104,12 @@ onMounted(load)
             <label>Address <small>Optional</small><input v-model="form.address" maxlength="255"></label>
             <label>Latitude <small>Optional</small><input v-model="form.latitude" type="number" min="-90" max="90" step="0.000001"></label>
             <label>Longitude <small>Optional</small><input v-model="form.longitude" type="number" min="-180" max="180" step="0.000001"></label>
+            <label>Category <small>Optional</small>
+              <select v-model="form.category">
+                <option value="">No category</option>
+                <option v-for="cat in STORE_CATEGORIES" :key="cat.value" :value="cat.value">{{ cat.label }}</option>
+              </select>
+            </label>
           </div>
         </div>
       </section>

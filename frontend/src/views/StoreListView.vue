@@ -375,6 +375,10 @@ onMounted(async () => {
           <div>
             <h2>{{ store.name }}</h2>
 
+            <span v-if="store.category_label" class="store-category-tag">
+              {{ store.category_label }}
+            </span>
+
             <p>
               {{ store.address || "No address yet" }}
             </p>
