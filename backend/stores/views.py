@@ -367,6 +367,21 @@ class StoreViewSet(viewsets.ModelViewSet):
             longitude__lte=longitude + lng_delta,
         )
 
+        payment_methods_param = request.query_params.get("payment_methods")
+
+        if payment_methods_param:
+            method_ids = [
+                int(value)
+                for value in payment_methods_param.split(",")
+                if value.isdigit()
+            ]
+
+            if method_ids:
+                candidates = candidates.filter(
+                    payment_methods__payment_method_id__in=method_ids,
+                    payment_methods__status="accepted",
+                ).distinct()
+
         stores = []
         for store in candidates:
             store_latitude = float(store.latitude)

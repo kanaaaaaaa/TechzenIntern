@@ -1,12 +1,14 @@
 <script setup>
 import { computed, onMounted, ref } from "vue"
 import StoreMap from "../components/StoreMap.vue"
-import { apiErrorMessage, nearbyRegisteredStores } from "../api"
+import { apiErrorMessage, nearbyRegisteredStores, listPaymentMethods } from "../api"
 
 const stores = ref([])
 const currentLocation = ref(null)
 const loading = ref(true)
 const error = ref("")
+const paymentMethods = ref([])
+const selectedPaymentMethodIds = ref([])
 
 const NEARBY_RADIUS_METERS = 1000
 
@@ -62,19 +64,52 @@ function getCurrentLocation() {
   })
 }
 
+async function fetchNearbyStores() {
+  if (!currentLocation.value) return
+
+  const params = {
+    latitude: currentLocation.value.latitude,
+    longitude: currentLocation.value.longitude,
+    radius: NEARBY_RADIUS_METERS,
+  }
+
+  if (selectedPaymentMethodIds.value.length > 0) {
+    params.payment_methods = selectedPaymentMethodIds.value.join(",")
+  }
+
+  stores.value = await nearbyRegisteredStores(params)
+}
+
+async function applyPaymentFilters() {
+  try {
+    error.value = ""
+    await fetchNearbyStores()
+  } catch (err) {
+    error.value = apiErrorMessage(err)
+  }
+}
+
+async function clearPaymentFilters() {
+  selectedPaymentMethodIds.value = []
+  await applyPaymentFilters()
+}
+
 async function load() {
   loading.value = true
   error.value = ""
 
   try {
-    const location = await getCurrentLocation()
-    currentLocation.value = location
+    const [location, methodData] = await Promise.all([
+      getCurrentLocation(),
+      listPaymentMethods(),
+    ])
 
-    stores.value = await nearbyRegisteredStores({
-      latitude: location.latitude,
-      longitude: location.longitude,
-      radius: NEARBY_RADIUS_METERS,
-    })
+    currentLocation.value = location
+    paymentMethods.value = Array.isArray(methodData)
+      ? methodData
+      : methodData.results || []
+
+    await fetchNearbyStores()
   } catch (err) {
     if (err?.code === 1) {
       error.value = "Location permission was denied."
@@ -101,15 +136,57 @@ onMounted(load)
 
     <p v-else-if="error" class="alert error">{{ error }}</p>
 
-    <StoreMap
-      v-else
-      :stores="nearbyStores"
-      :current-location="currentLocation"
-    />
+    <template v-else>
+      <div class="payment-filter">
+        <div class="payment-filter-title">
+          Filter by payment method
+        </div>
+
+        <div class="payment-options">
+          <label
+            v-for="method in paymentMethods"
+            :key="method.id"
+            class="payment-option"
+          >
+            <input
+              v-model="selectedPaymentMethodIds"
+              type="checkbox"
+              :value="method.id"
+            >
+            <span>{{ method.name }}</span>
+          </label>
+        </div>
+
+        <div class="filter-actions">
+          <button
+            type="button"
+            class="button secondary"
+            @click="applyPaymentFilters"
+          >
+            Apply
+          </button>
+
+          <button
+            type="button"
+            class="button secondary"
+            @click="clearPaymentFilters"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <StoreMap
+        :stores="nearbyStores"
+        :current-location="currentLocation"
+      />
+    </template>
 
     <div class="nearby-actions">
       <RouterLink class="button secondary" to="/">Back</RouterLink>
-      <RouterLink class="button secondary" to="/stores/new">Add a new store</RouterLink>
+      <RouterLink class="button secondary" to="/stores/new">
+        Add a new store
+      </RouterLink>
     </div>
   </section>
 </template>
@@ -117,6 +194,48 @@ onMounted(load)
 <style scoped>
 .nearby-page {
   width: 100%;
+}
+
+.payment-filter {
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.payment-filter-title {
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.payment-options {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 24px;
+  overflow-x: auto;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.payment-option input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 18px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
 }
 
 .nearby-actions {
