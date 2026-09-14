@@ -438,6 +438,7 @@ class StoreViewSet(viewsets.ModelViewSet):
                     "address": store.address,
                     "latitude": str(store.latitude),
                     "longitude": str(store.longitude),
+                    "category": store.category,
                     "payment_methods": [
                         {
                             "payment_method": {
