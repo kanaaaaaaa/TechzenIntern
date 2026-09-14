@@ -330,6 +330,15 @@ class StoreViewSet(viewsets.ModelViewSet):
                     payment_methods__status=filter_status,
                 ).distinct()
 
+        # Filter by category (OR logic - store must have ONE of the selected
+        # categories). Category is single-valued per store, so no join/distinct
+        # is needed here the way payment method filtering above needs one.
+        categories_param = self.request.query_params.get("categories")
+        if categories_param:
+            categories = [value for value in categories_param.split(",") if value]
+            if categories:
+                queryset = queryset.filter(category__in=categories)
+
         user = self.request.user
         if user.is_authenticated:
             queryset = queryset.prefetch_related(
@@ -381,6 +390,13 @@ class StoreViewSet(viewsets.ModelViewSet):
                     payment_methods__payment_method_id__in=method_ids,
                     payment_methods__status="accepted",
                 ).distinct()
+
+        categories_param = request.query_params.get("categories")
+
+        if categories_param:
+            categories = [value for value in categories_param.split(",") if value]
+            if categories:
+                candidates = candidates.filter(category__in=categories)
 
         stores = []
         for store in candidates:

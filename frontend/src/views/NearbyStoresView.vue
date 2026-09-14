@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue"
 import StoreMap from "../components/StoreMap.vue"
+import CategoryFilterBox from "../components/CategoryFilterBox.vue"
 import { apiErrorMessage, nearbyRegisteredStores, listPaymentMethods } from "../api"
 
 const stores = ref([])
@@ -9,6 +10,7 @@ const loading = ref(true)
 const error = ref("")
 const paymentMethods = ref([])
 const selectedPaymentMethodIds = ref([])
+const selectedCategories = ref([])
 
 const NEARBY_RADIUS_METERS = 1000
 
@@ -77,6 +79,10 @@ async function fetchNearbyStores() {
     params.payment_methods = selectedPaymentMethodIds.value.join(",")
   }
 
+  if (selectedCategories.value.length > 0) {
+    params.categories = selectedCategories.value.join(",")
+  }
+
   stores.value = await nearbyRegisteredStores(params)
 }
 
@@ -92,6 +98,15 @@ async function applyPaymentFilters() {
 async function clearPaymentFilters() {
   selectedPaymentMethodIds.value = []
   await applyPaymentFilters()
+}
+
+async function applyCategoryFilters() {
+  try {
+    error.value = ""
+    await fetchNearbyStores()
+  } catch (err) {
+    error.value = apiErrorMessage(err)
+  }
 }
 
 async function load() {
@@ -175,6 +190,11 @@ onMounted(load)
           </button>
         </div>
       </div>
+
+      <CategoryFilterBox
+        v-model="selectedCategories"
+        @update:model-value="applyCategoryFilters"
+      />
 
       <StoreMap
         :stores="nearbyStores"

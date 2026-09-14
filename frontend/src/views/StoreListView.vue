@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
+import CategoryFilterBox from "../components/CategoryFilterBox.vue"
 import {
   api,
   apiErrorMessage,
@@ -21,6 +22,7 @@ const router = useRouter()
 const query = ref(String(route.query.q || ""))
 const paymentMethods = ref([])
 const selectedMethods = ref(new Set())
+const selectedCategories = ref([])
 const stores = ref([])
 const totalCount = ref(0)
 const nextPageUrl = ref(null)
@@ -65,6 +67,10 @@ async function search() {
       params.payment_method_status = "accepted"
     }
 
+    if (selectedCategories.value.length > 0) {
+      params.categories = selectedCategories.value.join(",")
+    }
+
     const data = await listStores(params)
 
     stores.value = data.results
@@ -74,6 +80,7 @@ async function search() {
     const newQuery = {}
     if (query.value.trim()) newQuery.q = query.value.trim()
     if (selectedMethods.value.size > 0) newQuery.methods = Array.from(selectedMethods.value).join(",")
+    if (selectedCategories.value.length > 0) newQuery.categories = selectedCategories.value.join(",")
 
     await router.replace({
       name: "stores",
@@ -97,6 +104,9 @@ async function loadMore() {
     if (selectedMethods.value.size > 0) {
       url.searchParams.set("payment_methods", Array.from(selectedMethods.value).join(","))
       url.searchParams.set("payment_method_status", "accepted")
+    }
+    if (selectedCategories.value.length > 0) {
+      url.searchParams.set("categories", selectedCategories.value.join(","))
     }
     const response = await api.get(url.toString())
     stores.value = [...stores.value, ...response.data.results]
@@ -298,6 +308,11 @@ onMounted(async () => {
     methodIds.forEach((id) => selectedMethods.value.add(id))
   }
 
+  const categoriesParam = route.query.categories
+  if (categoriesParam) {
+    selectedCategories.value = String(categoriesParam).split(",").filter(Boolean)
+  }
+
   search()
 })
 </script>
@@ -343,6 +358,11 @@ onMounted(async () => {
         Clear
       </button>
     </div>
+
+    <CategoryFilterBox
+      v-model="selectedCategories"
+      @update:model-value="search"
+    />
   </div>
 
   <div class="result-head">
@@ -375,8 +395,25 @@ onMounted(async () => {
           <div>
             <h2>{{ store.name }}</h2>
 
-            <span v-if="store.category_label" class="store-category-tag">
-              {{ store.category_label }}
+            <div
+              v-if="store.payment_methods.length"
+              class="method-tags"
+            >
+              <span
+                v-for="item in store.payment_methods"
+                :key="item.payment_method.id"
+                :class="item.status"
+              >
+                {{ statusSymbols[item.status] }}｜{{ item.payment_method.name }}
+              </span>
+            </div>
+
+            <p v-else class="no-methods">
+              No accepted payment methods confirmed yet
+            </p>
+
+            <span class="store-category-tag">
+              {{ store.category_label || "Unknown" }}
             </span>
 
             <p>
@@ -413,23 +450,6 @@ onMounted(async () => {
             </span>
           </span>
         </div>
-
-        <div
-          v-if="store.payment_methods.length"
-          class="method-tags"
-        >
-          <span
-            v-for="item in store.payment_methods"
-            :key="item.payment_method.id"
-            :class="item.status"
-          >
-            {{ statusSymbols[item.status] }}｜{{ item.payment_method.name }}
-          </span>
-        </div>
-
-        <p v-else class="no-methods">
-          No accepted payment methods confirmed yet
-        </p>
       </RouterLink>
 
       <div class="store-card-foot">
