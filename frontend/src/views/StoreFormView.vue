@@ -128,7 +128,7 @@ onMounted(load)
 
   <form v-if="!confirming" class="editor-form" @submit.prevent="review">
     <section class="form-section">
-      <div class="section-number">01</div>
+      <div class="section-number">1</div>
       <div class="section-content">
         <h2>Store details</h2>
         <div class="field-grid">
@@ -150,7 +150,7 @@ onMounted(load)
     </section>
 
     <section class="form-section">
-      <div class="section-number">02</div>
+      <div class="section-number">2</div>
       <div class="section-content">
         <h2>Accepted payment methods</h2>
         <p class="section-note">Leave anything you are unsure about as "?".</p>
@@ -168,7 +168,7 @@ onMounted(load)
 
   <form v-else class="editor-form confirmation-form" @submit.prevent="save">
     <section class="form-section">
-      <div class="section-number">01</div>
+      <div class="section-number">1</div>
       <div class="section-content">
         <h2>Store details</h2>
         <dl class="review-details">
@@ -193,7 +193,7 @@ onMounted(load)
     </section>
 
     <section class="form-section">
-      <div class="section-number">02</div>
+      <div class="section-number">2</div>
       <div class="section-content">
         <h2>Payment methods</h2>
         <p class="section-note">These values will be saved with the new store.</p>

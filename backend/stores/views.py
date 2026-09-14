@@ -280,10 +280,18 @@ class AppAccessView(APIView):
 
 class StoreViewSet(viewsets.ModelViewSet):
     serializer_class = StoreSerializer
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [filters.SearchFilter]
     search_fields = ["name", "normalized_name", "address"]
-    ordering_fields = ["name", "latitude", "longitude", "updated_at", "created_at"]
-    ordering = ["name", "id"]
+
+    # Sorting by vote/comment counts needs the annotated fields from
+    # get_queryset() below, which DRF's generic OrderingFilter has no way to
+    # expose as plain query-param names, so it's handled by hand instead.
+    SORT_OPTIONS = {
+        "helpful_desc": ("-annotated_helpful_count", "name", "id"),
+        "not_helpful_desc": ("-annotated_not_helpful_count", "name", "id"),
+        "comments_desc": ("-annotated_comment_count", "name", "id"),
+    }
+    DEFAULT_ORDERING = ("-updated_at", "name", "id")
 
     def get_permissions(self):
         # Searching, viewing, and adding store info stay open to everyone.
@@ -348,7 +356,10 @@ class StoreViewSet(viewsets.ModelViewSet):
                     to_attr="my_feedback_votes",
                 )
             )
-        return queryset
+
+        sort_param = self.request.query_params.get("sort")
+        ordering = self.SORT_OPTIONS.get(sort_param, self.DEFAULT_ORDERING)
+        return queryset.order_by(*ordering)
 
     @action(detail=False, methods=["get"])
     def nearby(self, request):

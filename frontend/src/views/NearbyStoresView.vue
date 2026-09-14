@@ -166,6 +166,10 @@ onMounted(load)
   padding-top: 24px;
 }
 
+.filter-box {
+  margin-bottom: 24px;
+}
+
 .nearby-actions {
   display: flex;
   justify-content: center;

@@ -188,6 +188,7 @@ input:focus, select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rg
   .hero-actions { align-items: center; flex-direction: column; }
   .record-count { text-align: center; }
   .split-heading, .detail-heading { align-items: flex-start; flex-direction: column; }
+  .detail-heading { padding-top: 20px; padding-bottom: 20px; }
   .search-row { grid-template-columns: 1fr; }
   .form-section { grid-template-columns: 1fr; gap: 15px; }
   .method-edit-row { align-items: flex-start; flex-direction: column; }
