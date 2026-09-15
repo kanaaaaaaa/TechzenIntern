@@ -21,6 +21,10 @@ GOOGLE_PLACES_API_KEY = os.environ.get(
     "GOOGLE_PLACES_API_KEY",
     "",
 )
+GOOGLE_ROUTES_API_KEY = os.environ.get(
+    "GOOGLE_ROUTES_API_KEY",
+    "",
+)
 
 # Production is the default. A forgotten DJANGO_DEBUG must not open the app up,
 # so development is the setting you have to ask for.
