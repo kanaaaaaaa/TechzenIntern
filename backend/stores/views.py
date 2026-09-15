@@ -453,6 +453,94 @@ class StoreViewSet(viewsets.ModelViewSet):
 
         return Response(stores)
 
+    @action(detail=True, methods=["get"], url_path="walking-route")
+    def walking_route(self, request, pk=None):
+        store = self.get_object()
+
+        try:
+            latitude = float(request.query_params["latitude"])
+            longitude = float(request.query_params["longitude"])
+        except (KeyError, TypeError, ValueError):
+            raise ValidationError(
+                {"detail": "latitude and longitude must be valid numbers."}
+            )
+
+        if store.latitude is None or store.longitude is None:
+            raise ValidationError(
+                {"detail": "This store does not have location information."}
+            )
+
+        if not settings.GOOGLE_ROUTES_API_KEY:
+            return Response(
+                {"detail": "GOOGLE_ROUTES_API_KEY is not set."},
+                status=503,
+            )
+
+        payload = {
+            "origin": {
+                "location": {
+                    "latLng": {
+                        "latitude": latitude,
+                        "longitude": longitude,
+                    }
+                }
+            },
+            "destination": {
+                "location": {
+                    "latLng": {
+                        "latitude": float(store.latitude),
+                        "longitude": float(store.longitude),
+                    }
+                }
+            },
+            "travelMode": "WALK",
+            "languageCode": "en-US",
+            "units": "METRIC",
+        }
+
+        api_request = urllib_request.Request(
+            "https://routes.googleapis.com/directions/v2:computeRoutes",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "X-Goog-Api-Key": settings.GOOGLE_ROUTES_API_KEY,
+                "X-Goog-FieldMask": "routes.duration,routes.distanceMeters",
+            },
+            method="POST",
+        )
+
+        try:
+            with urllib_request.urlopen(api_request, timeout=10) as response:
+                data = json.load(response)
+        except urllib_error.HTTPError as exc:
+            return Response(
+                {"detail": f"Google Routes API error ({exc.code})."},
+                status=502,
+            )
+        except urllib_error.URLError:
+            return Response(
+                {"detail": "Could not connect to Google Routes API."},
+                status=502,
+            )
+
+        routes = data.get("routes", [])
+
+        if not routes:
+            return Response(
+                {"detail": "No walking route was found."},
+                status=404,
+            )
+
+        route = routes[0]
+        duration = route.get("duration", "0s")
+        seconds = float(duration.removesuffix("s"))
+        minutes = max(1, math.ceil(seconds / 60))
+
+        return Response({
+            "duration_minutes": minutes,
+            "distance_meters": route.get("distanceMeters", 0),
+        })
+
     @action(detail=True, methods=["post"])
     def feedback(self, request, pk=None):
         store = self.get_object()

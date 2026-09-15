@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 import { loadGoogleMapsLibrary } from "../googleMaps"
+import { getWalkingRoute } from "../api"
 
 const router = useRouter()
 
@@ -48,7 +49,7 @@ function clearMarkers() {
   markers = []
 }
 
-function openStoreInfo(marker, store) {
+async function openStoreInfo(marker, store) {
   const content = document.createElement("div")
   content.style.padding = "0 4px 4px"
 
@@ -94,6 +95,15 @@ function openStoreInfo(marker, store) {
     content.appendChild(category)
   }
 
+  const routeInfo = document.createElement("div")
+  routeInfo.style.marginTop = "6px"
+  routeInfo.style.fontSize = "13px"
+  routeInfo.style.fontWeight = "600"
+  routeInfo.style.color = "#555"
+  routeInfo.textContent = "Calculating walking route..."
+
+content.appendChild(routeInfo)
+
   if (store.payment_methods?.length) {
     const methods = document.createElement("div")
     methods.className = "method-tags"
@@ -116,6 +126,33 @@ function openStoreInfo(marker, store) {
     map,
     anchor: marker,
   })
+
+  if (props.currentLocation && store.id) {
+    try {
+      const route = await getWalkingRoute(store.id, {
+        latitude: props.currentLocation.latitude,
+        longitude: props.currentLocation.longitude,
+      })
+
+      const distanceText = route.distance_meters >= 1000
+        ? `${(route.distance_meters / 1000).toFixed(1)} km`
+        : `${route.distance_meters} m`
+
+      routeInfo.textContent =
+        `🚶 ${route.duration_minutes} min / ${distanceText}`
+
+      const warning = document.createElement("div")
+      warning.textContent = "Walking route may be incomplete."
+      warning.style.marginTop = "2px"
+      warning.style.fontSize = "10px"
+      warning.style.color = "#777"
+
+      routeInfo.insertAdjacentElement("afterend", warning)
+    } catch (err) {
+      console.error(err)
+      routeInfo.textContent = "Walking route unavailable"
+    }
+  }
 }
 
 function drawCurrentLocation() {

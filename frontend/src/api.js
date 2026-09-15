@@ -55,6 +55,9 @@ export const nearbyPlaces = (payload) =>
 
 export const getStore = (id) =>
   api.get(`/stores/${id}/`).then((response) => response.data)
+export const getWalkingRoute = (id, params) =>
+  api.get(`/stores/${id}/walking-route/`, { params })
+    .then((response) => response.data)
 
 export const createStore = (payload) =>
   api.post("/stores/", payload).then((response) => response.data)
