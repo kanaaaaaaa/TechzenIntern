@@ -332,10 +332,12 @@ class StoreViewSet(viewsets.ModelViewSet):
         if payment_methods_param:
             method_ids = [int(id_str) for id_str in payment_methods_param.split(",") if id_str.isdigit()]
             if method_ids:
-                filter_status = payment_method_status or "accepted"
+                filter_statuses = [
+                    value for value in (payment_method_status or "accepted").split(",") if value
+                ]
                 queryset = queryset.filter(
                     payment_methods__payment_method_id__in=method_ids,
-                    payment_methods__status=filter_status,
+                    payment_methods__status__in=filter_statuses,
                 ).distinct()
 
         # Filter by category (OR logic - store must have ONE of the selected
@@ -345,7 +347,12 @@ class StoreViewSet(viewsets.ModelViewSet):
         if categories_param:
             categories = [value for value in categories_param.split(",") if value]
             if categories:
-                queryset = queryset.filter(category__in=categories)
+                if self.request.query_params.get("category_include_unknown") == "1":
+                    queryset = queryset.filter(
+                        Q(category__in=categories) | Q(category="")
+                    )
+                else:
+                    queryset = queryset.filter(category__in=categories)
 
         user = self.request.user
         if user.is_authenticated:
@@ -388,6 +395,7 @@ class StoreViewSet(viewsets.ModelViewSet):
         ).prefetch_related("payment_methods__payment_method")
 
         payment_methods_param = request.query_params.get("payment_methods")
+        payment_method_status = request.query_params.get("payment_method_status")
 
         if payment_methods_param:
             method_ids = [
@@ -397,9 +405,12 @@ class StoreViewSet(viewsets.ModelViewSet):
             ]
 
             if method_ids:
+                filter_statuses = [
+                    value for value in (payment_method_status or "accepted").split(",") if value
+                ]
                 candidates = candidates.filter(
                     payment_methods__payment_method_id__in=method_ids,
-                    payment_methods__status="accepted",
+                    payment_methods__status__in=filter_statuses,
                 ).distinct()
 
         categories_param = request.query_params.get("categories")
@@ -407,7 +418,12 @@ class StoreViewSet(viewsets.ModelViewSet):
         if categories_param:
             categories = [value for value in categories_param.split(",") if value]
             if categories:
-                candidates = candidates.filter(category__in=categories)
+                if request.query_params.get("category_include_unknown") == "1":
+                    candidates = candidates.filter(
+                        Q(category__in=categories) | Q(category="")
+                    )
+                else:
+                    candidates = candidates.filter(category__in=categories)
 
         stores = []
         for store in candidates:

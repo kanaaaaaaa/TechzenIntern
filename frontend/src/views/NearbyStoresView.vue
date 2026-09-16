@@ -11,6 +11,8 @@ const error = ref("")
 const paymentMethods = ref([])
 const selectedPaymentMethodIds = ref([])
 const selectedCategories = ref([])
+const includePaymentUnknown = ref(false)
+const includeCategoryUnknown = ref(false)
 
 const NEARBY_RADIUS_METERS = 1000
 
@@ -77,10 +79,12 @@ async function fetchNearbyStores() {
 
   if (selectedPaymentMethodIds.value.length > 0) {
     params.payment_methods = selectedPaymentMethodIds.value.join(",")
+    params.payment_method_status = includePaymentUnknown.value ? "accepted,unknown" : "accepted"
   }
 
   if (selectedCategories.value.length > 0) {
     params.categories = selectedCategories.value.join(",")
+    if (includeCategoryUnknown.value) params.category_include_unknown = "1"
   }
 
   stores.value = await nearbyRegisteredStores(params)
@@ -142,6 +146,8 @@ onMounted(load)
         :payment-methods="paymentMethods"
         v-model:selected-payment-methods="selectedPaymentMethodIds"
         v-model:selected-categories="selectedCategories"
+        v-model:include-payment-unknown="includePaymentUnknown"
+        v-model:include-category-unknown="includeCategoryUnknown"
         @apply="applyFilters"
       />
 

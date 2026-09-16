@@ -1,5 +1,5 @@
 <script setup>
-import { computed, inject, onBeforeUnmount, onMounted, reactive, ref } from "vue"
+import { computed, inject, onMounted, reactive, ref } from "vue"
 import { useRoute, useRouter } from "vue-router"
 
 import PaymentMethodEditor from "../components/PaymentMethodEditor.vue"
@@ -21,16 +21,19 @@ const error = ref("")
 const notice = ref(route.query.created ? "The store has been added." : "")
 const pointsEarned = ref(0)
 const showingPoints = ref(false)
-let pointsTimer
+let afterPoints = null
 
 function showPoints(points, after) {
-  if (pointsTimer) window.clearTimeout(pointsTimer)
   pointsEarned.value = points
+  afterPoints = after
   showingPoints.value = true
-  pointsTimer = window.setTimeout(() => {
-    showingPoints.value = false
-    after()
-  }, 1500)
+}
+
+function handlePointsFinished() {
+  showingPoints.value = false
+  const after = afterPoints
+  afterPoints = null
+  if (after) after()
 }
 
 const listRoute = computed(() => ({
@@ -82,7 +85,7 @@ async function save() {
     })
     store.value = updated
     refreshUserPoints?.()
-    showPoints(updated?.points_awarded || 1, () => router.push({ name: "home" }))
+    showPoints(updated?.points_awarded || 1, () => router.push(listRoute.value))
   } catch (err) {
     error.value = apiErrorMessage(err)
   } finally {
@@ -91,14 +94,10 @@ async function save() {
 }
 
 onMounted(load)
-
-onBeforeUnmount(() => {
-  if (pointsTimer) window.clearTimeout(pointsTimer)
-})
 </script>
 
 <template>
-  <PointsRewardOverlay v-if="showingPoints" :points="pointsEarned" />
+  <PointsRewardOverlay v-if="showingPoints" :points="pointsEarned" @finished="handlePointsFinished" />
 
   <div v-if="loading" class="empty-state">Loading store details…</div>
   <div v-else-if="!store" class="empty-state"><h1>This store cannot be shown</h1><p>{{ error }}</p><RouterLink class="button primary" :to="listRoute">Back to the list</RouterLink></div>

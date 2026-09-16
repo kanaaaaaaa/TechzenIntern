@@ -1,5 +1,5 @@
 <script setup>
-import { computed, inject, onBeforeUnmount, onMounted, reactive, ref } from "vue"
+import { computed, inject, onMounted, reactive, ref } from "vue"
 import { useRouter } from "vue-router"
 
 import PaymentMethodEditor from "../components/PaymentMethodEditor.vue"
@@ -22,16 +22,19 @@ const confirming = ref(false)
 const error = ref("")
 const pointsEarned = ref(0)
 const showingPoints = ref(false)
-let pointsTimer
+let afterPoints = null
 
 function showPoints(points, after) {
-  if (pointsTimer) window.clearTimeout(pointsTimer)
   pointsEarned.value = points
+  afterPoints = after
   showingPoints.value = true
-  pointsTimer = window.setTimeout(() => {
-    showingPoints.value = false
-    after()
-  }, 1500)
+}
+
+function handlePointsFinished() {
+  showingPoints.value = false
+  const after = afterPoints
+  afterPoints = null
+  if (after) after()
 }
 
 const canReview = computed(() => form.name.trim() && !loading.value)
@@ -94,12 +97,16 @@ function review() {
   window.scrollTo({ top: 0, behavior: "smooth" })
 }
 
-function cancel() {
+function backToList() {
   if (window.history.state && window.history.state.back) {
     router.back()
   } else {
     router.push({ name: "stores" })
   }
+}
+
+function cancel() {
+  backToList()
 }
 
 function cancelReview() {
@@ -124,7 +131,7 @@ async function save() {
       })),
     })
     refreshUserPoints?.()
-    showPoints(data?.points_awarded || 3, () => router.push({ name: "home" }))
+    showPoints(data?.points_awarded || 3, backToList)
   } catch (err) {
     error.value = apiErrorMessage(err)
   } finally {
@@ -133,14 +140,10 @@ async function save() {
 }
 
 onMounted(load)
-
-onBeforeUnmount(() => {
-  if (pointsTimer) window.clearTimeout(pointsTimer)
-})
 </script>
 
 <template>
-  <PointsRewardOverlay v-if="showingPoints" :points="pointsEarned" />
+  <PointsRewardOverlay v-if="showingPoints" :points="pointsEarned" @finished="handlePointsFinished" />
 
   <section v-if="confirming" class="page-heading confirmation-heading">
     <h1>Please confirm the details.</h1>
