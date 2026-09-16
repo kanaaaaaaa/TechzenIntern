@@ -24,6 +24,8 @@ const paymentMethods = ref([])
 const selectedMethods = ref([])
 const selectedCategories = ref([])
 const selectedSort = ref("")
+const includePaymentUnknown = ref(false)
+const includeCategoryUnknown = ref(false)
 
 const SORT_OPTIONS = [
   { value: "helpful_desc", label: "Most Good votes" },
@@ -70,11 +72,12 @@ async function search() {
 
     if (selectedMethods.value.length > 0) {
       params.payment_methods = selectedMethods.value.join(",")
-      params.payment_method_status = "accepted"
+      params.payment_method_status = includePaymentUnknown.value ? "accepted,unknown" : "accepted"
     }
 
     if (selectedCategories.value.length > 0) {
       params.categories = selectedCategories.value.join(",")
+      if (includeCategoryUnknown.value) params.category_include_unknown = "1"
     }
 
     if (selectedSort.value) {
@@ -92,6 +95,8 @@ async function search() {
     if (selectedMethods.value.length > 0) newQuery.methods = selectedMethods.value.join(",")
     if (selectedCategories.value.length > 0) newQuery.categories = selectedCategories.value.join(",")
     if (selectedSort.value) newQuery.sort = selectedSort.value
+    if (selectedMethods.value.length > 0 && includePaymentUnknown.value) newQuery.include_payment_unknown = "1"
+    if (selectedCategories.value.length > 0 && includeCategoryUnknown.value) newQuery.include_category_unknown = "1"
 
     await router.replace({
       name: "stores",
@@ -114,10 +119,11 @@ async function loadMore() {
     const url = new URL(nextPageUrl.value, window.location.origin)
     if (selectedMethods.value.length > 0) {
       url.searchParams.set("payment_methods", selectedMethods.value.join(","))
-      url.searchParams.set("payment_method_status", "accepted")
+      url.searchParams.set("payment_method_status", includePaymentUnknown.value ? "accepted,unknown" : "accepted")
     }
     if (selectedCategories.value.length > 0) {
       url.searchParams.set("categories", selectedCategories.value.join(","))
+      if (includeCategoryUnknown.value) url.searchParams.set("category_include_unknown", "1")
     }
     if (selectedSort.value) {
       url.searchParams.set("sort", selectedSort.value)
@@ -315,6 +321,14 @@ onMounted(async () => {
     selectedSort.value = String(sortParam)
   }
 
+  if (route.query.include_payment_unknown === "1") {
+    includePaymentUnknown.value = true
+  }
+
+  if (route.query.include_category_unknown === "1") {
+    includeCategoryUnknown.value = true
+  }
+
   search()
 })
 </script>
@@ -343,6 +357,8 @@ onMounted(async () => {
     v-model:selected-categories="selectedCategories"
     :sort-options="SORT_OPTIONS"
     v-model:selected-sort="selectedSort"
+    v-model:include-payment-unknown="includePaymentUnknown"
+    v-model:include-category-unknown="includeCategoryUnknown"
     @apply="search"
   />
 
